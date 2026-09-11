@@ -60,15 +60,19 @@ function clearSignature(){ctx.clearRect(0,0,canvas.width,canvas.height);hasSig=f
 function collect(){
  const fd=new FormData($("#serviceForm")),o=Object.fromEntries(fd.entries());
  o.reportNo=reportNo();
- o.equipment=[...document.querySelectorAll(".equipment")].map(x=>Object.fromEntries(new FormData(x).entries()));
- o.parts=[...document.querySelectorAll(".part-row")].map(x=>Object.fromEntries(new FormData(x).entries())).filter(x=>x.partNo||x.partDesc||x.qty);
+ const readInputs=el=>Object.fromEntries([...el.querySelectorAll("input,select,textarea")].filter(i=>i.name).map(i=>[i.name,i.value]));
+ o.equipment=[...document.querySelectorAll(".equipment")].map(readInputs);
+ o.parts=[...document.querySelectorAll(".part-row")].map(readInputs).filter(x=>x.partNo||x.partDesc||x.qty);
  o.signature=hasSig?canvas.toDataURL("image/png"):"";o.generatedAt=new Date().toISOString();return o;
 }
 $("#serviceForm").addEventListener("submit",e=>{
- e.preventDefault();if(!hasSig){alert("Customer signature is required.");return}
+ e.preventDefault();
+ const form=$("#serviceForm");
+ if(!form.checkValidity()){form.reportValidity();return}
+ if(!hasSig){alert("Customer signature is required.");return}
  const o=collect();localStorage.setItem("atd_last_report",JSON.stringify(o));
  counter=Math.min(counter+1,999);localStorage.setItem("atd_service_counter",String(counter));
- $("#serviceForm").classList.add("hidden");$("#review").classList.remove("hidden");
+ form.classList.add("hidden");$("#review").classList.remove("hidden");
  $("#reviewContent").innerHTML=`<pre>${escapeHtml(JSON.stringify(o,null,2))}</pre><p><strong>Next Service Report:</strong> ${reportNo()}</p>`;
  window.scrollTo({top:0,behavior:"smooth"});
 });
@@ -110,6 +114,7 @@ async function generatePDF(){
   }
   doc.setFont("helvetica","bold");doc.setFontSize(19);doc.setTextColor(...navy);
   doc.text("SERVICE REPORT",W/2,15,{align:"center"});
+  doc.setFont("helvetica","bold");doc.setFontSize(7);doc.setTextColor(90,102,118);doc.text("CUSTOMER COPY",W/2,24,{align:"center"});
   doc.setFont("helvetica","normal");doc.setFontSize(8.5);doc.setTextColor(80,94,112);
   doc.text("Field Service Report & Customer Acceptance",W/2,20,{align:"center"});
 
@@ -213,7 +218,7 @@ async function generatePDF(){
   doc.setFont("helvetica","bold");doc.setFontSize(7);doc.setTextColor(...navy);
   doc.text("AUTOMATIONTODAYCA",M,281);
   doc.setFont("helvetica","normal");doc.setTextColor(100,112,128);
-  doc.text("Field Service Report",W-M,281,{align:"right"});
+  doc.text("Customer Copy • Field Service Report",W-M,281,{align:"right"});
 
   doc.save(`${o.reportNo}.pdf`);
 }
