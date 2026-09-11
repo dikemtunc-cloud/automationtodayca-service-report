@@ -21,3 +21,6 @@ Responsive branded field service report prototype.
 
 ### V3.1 status fix
 The status area no longer uses a generic yellow active rule. Each status has its own ATD-inspired color.
+
+### Customer PDF
+The generated PDF is clearly identified as a **CUSTOMER COPY** and includes the signed service report, customer acceptance statement, service/equipment details, work performed, materials, status, and relevant notes.
