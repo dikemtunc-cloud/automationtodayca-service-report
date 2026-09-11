@@ -1,4 +1,4 @@
-# AutomationTodayCA Service Report V2
+# AutomationTodayCA Service Report V3.1
 
 Responsive branded field service report prototype.
 
@@ -18,3 +18,6 @@ Responsive branded field service report prototype.
 2. Build a professional PDF generator.
 3. Connect the existing GitHub/Gmail mail workflow.
 4. Add Google Drive PDF archiving.
+
+### V3.1 status fix
+The status area no longer uses a generic yellow active rule. Each status has its own ATD-inspired color.
