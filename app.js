@@ -12,10 +12,21 @@ document.querySelectorAll(".type").forEach(b=>b.addEventListener("click",()=>{
  document.querySelectorAll(".type").forEach(x=>x.classList.remove("active"));b.classList.add("active");
  document.querySelector('[name="serviceType"]').value=b.dataset.value;
 }));
-document.querySelectorAll(".status").forEach(b=>b.addEventListener("click",()=>{
- document.querySelectorAll(".status").forEach(x=>x.classList.remove("active"));b.classList.add("active");
- document.querySelector('[name="result"]').value=b.dataset.value;
-}));
+const statusIcons={
+ "Completed":"✓",
+ "Unable to Complete":"×",
+ "Follow-up Required":"◷",
+ "Completed – Further Work Required":"🔧"
+};
+document.querySelectorAll(".status").forEach(b=>{
+ const label=b.textContent.trim();
+ b.innerHTML=`<span class="status-icon">${statusIcons[b.dataset.value]||"●"}</span> ${label.replace(/^●\\s*/,"").replace(/^◷\\s*/,"")}`;
+ b.addEventListener("click",()=>{
+   document.querySelectorAll(".status").forEach(x=>x.classList.remove("active"));
+   b.classList.add("active");
+   document.querySelector('[name="result"]').value=b.dataset.value;
+ });
+});
 
 function addEquipment(){
  const w=document.createElement("div");w.className="repeat equipment";
