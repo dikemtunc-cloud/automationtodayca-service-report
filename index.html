@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AutomationTodayCA | Service Report</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div>
+    <div class="brand">AUTOMATIONTODAYCA</div>
+    <div class="subtitle">SERVICE REPORT</div>
+  </div>
+  <div class="report-no" id="reportNo">SR_ATD_22AD0005001</div>
+</header>
+
+<main>
+<form id="serviceForm">
+<section class="card">
+<h2>1. CUSTOMER INFORMATION</h2>
+<div class="grid">
+<label>Company Name *<input name="company" required></label>
+<label>Contact Person *<input name="contact" required></label>
+<label>Email *<input type="email" name="email" required></label>
+<label>Phone<input name="phone"></label>
+<label class="full">Service Address<input name="address"></label>
+<label>City<input name="city"></label>
+<label>Province<input name="province" value="ON"></label>
+<label>Postal Code<input name="postal"></label>
+</div>
+</section>
+
+<section class="card">
+<h2>2. SERVICE INFORMATION</h2>
+<div class="grid">
+<label>Service Date *<input type="date" name="serviceDate" required></label>
+<label>Technician *<input name="technician" required></label>
+<label>PO Number<input name="po"></label>
+<label>Work Order #<input name="workOrder"></label>
+<label class="full">Service Type
+<select name="serviceType">
+<option>Troubleshooting</option><option>Repair</option><option>Installation</option>
+<option>Preventive Maintenance</option><option>Inspection</option><option>Other</option>
+</select></label>
+</div>
+</section>
+
+<section class="card">
+<h2>3. EQUIPMENT INFORMATION</h2>
+<div id="equipmentList">
+<div class="repeat equipment">
+<div class="grid">
+<label>Equipment / Machine<input name="equipment"></label>
+<label>Manufacturer<input name="manufacturer"></label>
+<label>Model<input name="model"></label>
+<label>Serial Number<input name="serial"></label>
+<label>Part Number<input name="partNumber"></label>
+<label>Equipment Tag / Location<input name="location"></label>
+</div>
+<button type="button" class="remove" onclick="removeRow(this)">Remove</button>
+</div>
+</div>
+<button type="button" class="secondary" onclick="addEquipment()">+ Add Equipment</button>
+</section>
+
+<section class="card">
+<h2>4. WORK PERFORMED / MATERIALS</h2>
+<label>Work Performed *<textarea name="work" rows="6" required></textarea></label>
+<h3>Parts / Materials Used</h3>
+<div id="partsList">
+<div class="part-row">
+<input placeholder="Part No." name="partNo">
+<input placeholder="Description" name="partDesc">
+<input placeholder="Qty" name="qty" type="number" min="0" step="1">
+<button type="button" class="icon" onclick="removeRow(this)">×</button>
+</div>
+</div>
+<button type="button" class="secondary" onclick="addPart()">+ Add Part</button>
+<div class="grid notes">
+<label>Service Result
+<select name="result">
+<option>Completed</option>
+<option>Completed – Further Work Required</option>
+<option>Unable to Complete</option>
+<option>Follow-up Required</option>
+</select></label>
+<label>Technician Notes<textarea name="techNotes" rows="3"></textarea></label>
+<label class="full">Customer Comments<textarea name="customerComments" rows="3"></textarea></label>
+</div>
+</section>
+
+<section class="card">
+<h2>5. CUSTOMER APPROVAL</h2>
+<p class="notice">I acknowledge that the services described above have been performed and that this Service Report accurately records the work completed.</p>
+<label>Customer Name *<input name="customerName" required></label>
+<div class="signature-wrap">
+  <div class="signature-head"><span>Customer Signature *</span><button type="button" class="secondary small" onclick="clearSignature()">Clear</button></div>
+  <canvas id="signature" width="900" height="260"></canvas>
+</div>
+</section>
+
+<section class="actions">
+<button type="button" class="secondary" onclick="window.print()">PRINT / SAVE</button>
+<button type="submit" class="primary">REVIEW SERVICE REPORT →</button>
+</section>
+</form>
+
+<div id="review" class="card review hidden">
+<h2>REVIEW & SIGNATURE CONFIRMED</h2>
+<div id="reviewContent"></div>
+<button class="primary" onclick="downloadData()">DOWNLOAD REPORT DATA</button>
+<button class="secondary" onclick="location.reload()">NEW SERVICE REPORT</button>
+</div>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
