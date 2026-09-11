@@ -73,7 +73,32 @@ $("#serviceForm").addEventListener("submit",e=>{
  const o=collect();localStorage.setItem("atd_last_report",JSON.stringify(o));
  counter=Math.min(counter+1,999);localStorage.setItem("atd_service_counter",String(counter));
  form.classList.add("hidden");$("#review").classList.remove("hidden");
- $("#reviewContent").innerHTML=`<pre>${escapeHtml(JSON.stringify(o,null,2))}</pre><p><strong>Next Service Report:</strong> ${reportNo()}</p>`;
+ const eqRows=(o.equipment||[]).map(e=>`<tr><td>${escapeHtml(e.equipment||"—")}</td><td>${escapeHtml(e.manufacturer||"—")}</td><td>${escapeHtml(e.model||"—")}</td><td>${escapeHtml(e.serial||"—")}</td></tr>`).join("");
+ const partRows=(o.parts||[]).map(p=>`<tr><td>${escapeHtml(p.partNo||"—")}</td><td>${escapeHtml(p.partDesc||"—")}</td><td>${escapeHtml(p.qty||"—")}</td></tr>`).join("");
+ const statusClass={"Completed":"review-completed","Unable to Complete":"review-unable","Follow-up Required":"review-followup","Completed – Further Work Required":"review-further"}[o.result]||"review-completed";
+ $("#reviewContent").innerHTML=`
+ <div class="review-header"><div><div class="review-kicker">CUSTOMER REVIEW</div><h2>${escapeHtml(o.reportNo)}</h2></div><div class="review-status ${statusClass}">${escapeHtml(o.result||"Completed")}</div></div>
+ <div class="review-grid">
+   <div><span>Customer</span><strong>${escapeHtml(o.company||"—")}</strong></div>
+   <div><span>Contact Person</span><strong>${escapeHtml(o.contact||"—")}</strong></div>
+   <div><span>Service Date</span><strong>${escapeHtml(o.serviceDate||"—")}</strong></div>
+   <div><span>Technician</span><strong>${escapeHtml(o.technician||"—")}</strong></div>
+   <div><span>PO Number</span><strong>${escapeHtml(o.po||"—")}</strong></div>
+   <div><span>Customer Work Order</span><strong>${escapeHtml(o.workOrder||"—")}</strong></div>
+ </div>
+ <div class="review-section"><h3>Equipment</h3><table><thead><tr><th>Equipment / Machine</th><th>Manufacturer</th><th>Model</th><th>Serial Number</th></tr></thead><tbody>${eqRows||'<tr><td colspan="4">No equipment recorded.</td></tr>'}</tbody></table></div>
+ <div class="review-section"><h3>Work Performed</h3><div class="review-text">${escapeHtml(o.work||"—")}</div></div>
+ <div class="review-section"><h3>Parts / Materials Used</h3><table><thead><tr><th>Part Number</th><th>Description</th><th>Qty</th></tr></thead><tbody>${partRows||'<tr><td colspan="3">No parts or materials recorded.</td></tr>'}</tbody></table></div>
+ <div class="review-grid">
+   <div><span>Technician Notes</span><strong>${escapeHtml(o.techNotes||"—")}</strong></div>
+   <div><span>Customer Comments</span><strong>${escapeHtml(o.customerComments||"—")}</strong></div>
+   <div><span>Customer Name</span><strong>${escapeHtml(o.customerName||"—")}</strong></div>
+   <div><span>Signature</span><strong class="signed">✓ Signature captured</strong></div>
+ </div>
+ <div class="review-acceptance">Customer acceptance has been recorded for this Service Report.</div>
+ <div class="review-actions"><button type="button" class="primary-btn" onclick="generatePDF()">GENERATE CUSTOMER PDF</button><button type="button" class="secondary-btn" onclick="window.print()">PRINT REVIEW</button></div>
+ <p class="next-report">Next Service Report: <strong>${reportNo()}</strong></p>`;
+
  window.scrollTo({top:0,behavior:"smooth"});
 });
 function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}

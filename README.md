@@ -27,3 +27,6 @@ The generated PDF is clearly identified as a **CUSTOMER COPY** and includes the 
 
 ### V1.1 fix
 Fixed the Next button: repeatable equipment/material rows are collected without using FormData on non-form elements, and native required-field validation is shown before advancing.
+
+### Review screen update
+The final review no longer exposes raw JSON. It now presents a customer-friendly service report summary with status, equipment, work, materials, notes, signature confirmation, and PDF/print actions.
