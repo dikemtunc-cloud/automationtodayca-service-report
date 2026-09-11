@@ -2,7 +2,7 @@ const $=s=>document.querySelector(s);
 let counter=Number(localStorage.getItem("atd_service_counter")||"1");
 const DELIVERY_CONFIG = {
   url: "https://script.google.com/macros/s/AKfycbyHSbleHz_s9EQR2ygDsty05QkRBsSK3aIocfO8PiiFykhYILlFsXDkRWyGPE5TS4Iw/exec",
-  token: "PUT_YOUR_NEW_ATD_SECRET_HERE"
+  token: "patetesliborek340528"
 };
 
 const reportNo=()=>`SR_ATD_22AD0005${String(counter).padStart(3,"0")}`;
