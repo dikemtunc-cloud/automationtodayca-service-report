@@ -36,3 +36,9 @@ Fixed the Customer PDF generator by making the asynchronous PDF function valid J
 
 ### V4 live-cache/PDF fix
 Fixed the live-repository `async async function` syntax error, removed the legacy footer action bar deterministically when entering Review, bound the PDF/print buttons explicitly, and cache-busted CSS/JS URLs to prevent stale GitHub Pages assets.
+
+### V5 PDF engine fix
+Removed the external jsPDF-AutoTable dependency and replaced it with a built-in table renderer. The customer PDF now requires only jsPDF, reducing CDN/plugin failures. Cache version bumped to V5.
+
+### V6 review/edit/final confirmation
+Review is now a non-final draft stage. EDIT REPORT returns to the form without losing entered data or signature. SUBMIT & CONFIRM records final acceptance and only then advances the unique service-report counter. PDF/Print actions appear after final confirmation.

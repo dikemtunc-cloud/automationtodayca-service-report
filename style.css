@@ -34,3 +34,5 @@
 .secondary-btn{background:#fff;color:#0f2b5b}
 .next-report{text-align:right;color:#718096;font-size:9px;margin-top:10px}
 @media(max-width:700px){.review-grid{grid-template-columns:1fr}.review-header{align-items:flex-start;flex-direction:column}.review-actions{flex-direction:column}.review-actions button{width:100%}}
+
+.review-actions .primary-btn{background:#173c78;color:#fff;border-color:#173c78}.review-actions .secondary-btn{background:#fff;color:#173c78}.review-acceptance.pending{background:#fff9d6;border-left:4px solid #e5c900}.review-acceptance.confirmed{background:#eef9f0;border-left:4px solid #4da85f}.review-actions{flex-wrap:wrap}
