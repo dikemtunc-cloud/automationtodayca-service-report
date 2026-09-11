@@ -1,5 +1,10 @@
 const $=s=>document.querySelector(s);
 let counter=Number(localStorage.getItem("atd_service_counter")||"1");
+const DELIVERY_CONFIG = {
+  url: "https://script.google.com/macros/s/AKfycbyHSbleHz_s9EQR2ygDsty05QkRBsSK3aIocfO8PiiFykhYILlFsXDkRWyGPE5TS4Iw/exec",
+  token: "PUT_YOUR_NEW_ATD_SECRET_HERE"
+};
+
 const reportNo=()=>`SR_ATD_22AD0005${String(counter).padStart(3,"0")}`;
 $("#reportNo").textContent=reportNo(); $("#reportInput").value=reportNo();
 
@@ -145,6 +150,7 @@ async function generatePDF(){
   if(!window.jspdf || !window.jspdf.jsPDF){
     alert("PDF engine is not loaded. Please refresh the page and try again.");return;
   }
+
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"letter"});
   const W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight(), M=14;
@@ -174,7 +180,12 @@ async function generatePDF(){
     safeRows.forEach(row=>{
       const lineCounts=row.map((v,i)=>textLines(v,widths[i]-4,7.2).length);
       const rh=Math.max(7,Math.min(22,Math.max(...lineCounts)*3.8+3));
-      if(y+rh>H-18){doc.addPage();y=16;doc.setFillColor(244,247,250);doc.rect(M,y,total,rowH,"FD");doc.setFont("helvetica","bold");doc.setFontSize(6.5);x=M;headers.forEach((h,i)=>{doc.text(String(h),x+2,y+4.6);x+=widths[i]});y+=rowH;doc.setFont("helvetica","normal");doc.setFontSize(7.2)}
+      if(y+rh>H-18){
+        doc.addPage();y=16;doc.setFillColor(244,247,250);doc.rect(M,y,total,rowH,"FD");
+        doc.setFont("helvetica","bold");doc.setFontSize(6.5);x=M;
+        headers.forEach((h,i)=>{doc.text(String(h),x+2,y+4.6);x+=widths[i]});
+        y+=rowH;doc.setFont("helvetica","normal");doc.setFontSize(7.2)
+      }
       doc.setDrawColor(205,213,222);doc.rect(M,y,total,rh,"S");x=M;
       row.forEach((v,i)=>{doc.rect(x,y,widths[i],rh,"S");doc.text(textLines(v,widths[i]-4,7.2).slice(0,5),x+2,y+4);x+=widths[i]});
       y+=rh;
@@ -182,11 +193,15 @@ async function generatePDF(){
     return y;
   }
 
-  if(logo.complete && logo.naturalWidth){const ratio=logo.naturalHeight/logo.naturalWidth,lw=48,lh=Math.min(lw*ratio,18);doc.addImage(logo,"PNG",M,7,lw,lh)}
+  if(logo.complete && logo.naturalWidth){
+    const ratio=logo.naturalHeight/logo.naturalWidth,lw=48,lh=Math.min(lw*ratio,18);
+    doc.addImage(logo,"PNG",M,7,lw,lh)
+  }
   doc.setFont("helvetica","bold");doc.setFontSize(19);doc.setTextColor(...navy);doc.text("SERVICE REPORT",W/2,15,{align:"center"});
   doc.setFont("helvetica","normal");doc.setFontSize(8.5);doc.setTextColor(80,94,112);doc.text("Field Service Report & Customer Acceptance",W/2,20,{align:"center"});
   doc.setFont("helvetica","bold");doc.setFontSize(7);doc.text("CUSTOMER COPY",W/2,24,{align:"center"});
-  doc.setFillColor(255,248,191);doc.setDrawColor(229,207,28);doc.roundedRect(W-72,7,58,16,2,2,"FD");doc.setTextColor(50,58,68);doc.setFontSize(6.5);doc.text("SERVICE REPORT NO.",W-69,12.5);doc.setFont("courier","bold");doc.setFontSize(8);doc.text(o.reportNo,W-69,19);
+  doc.setFillColor(255,248,191);doc.setDrawColor(229,207,28);doc.roundedRect(W-72,7,58,16,2,2,"FD");
+  doc.setTextColor(50,58,68);doc.setFontSize(6.5);doc.text("SERVICE REPORT NO.",W-69,12.5);doc.setFont("courier","bold");doc.setFontSize(8);doc.text(o.reportNo,W-69,19);
 
   let y=29;
   y=section("1. CUSTOMER INFORMATION",y);
@@ -222,7 +237,61 @@ async function generatePDF(){
   if(o.signature){try{doc.addImage(o.signature,"PNG",M+3,y+9,84,31)}catch(e){}}
   doc.setFillColor(242,246,249);doc.setDrawColor(210,218,226);doc.roundedRect(M+96,y+6,88,38,1.5,1.5,"FD");doc.setFont("helvetica","normal");doc.setFontSize(7.5);doc.setTextColor(65,78,95);doc.text(textLines("I acknowledge that the services described above have been performed and that this Service Report accurately records the work completed.",80,7.5),M+100,y+12);doc.setFont("helvetica","bold");doc.setFontSize(7);doc.text("Approval recorded:",M+100,y+38);doc.setFont("helvetica","normal");doc.text(new Date(o.generatedAt||Date.now()).toLocaleString("en-CA"),M+123,y+38);
   doc.setDrawColor(...navy);doc.line(M,H-14,W-M,H-14);doc.setFont("helvetica","bold");doc.setFontSize(7);doc.setTextColor(...navy);doc.text("AUTOMATIONTODAYCA",M,H-9);doc.setFont("helvetica","normal");doc.setTextColor(100,112,128);doc.text("Customer Copy • Field Service Report",W-M,H-9,{align:"right"});
-  doc.save(`${o.reportNo}.pdf`);
- }catch(err){console.error("Customer PDF generation failed:",err);alert("Customer PDF could not be generated. Please refresh the page and try again.");}
+
+  // Create the PDF as a data URI so the same PDF can be sent to Apps Script.
+  const pdfDataUri = doc.output("datauristring");
+  const pdfBase64 = pdfDataUri.split(",")[1];
+  const filename = `${o.reportNo}.pdf`;
+
+  const payload = {
+    token: DELIVERY_CONFIG.token,
+    reportNo: o.reportNo,
+    company: o.company || "",
+    customerEmail: o.email || "",
+    filename: filename,
+    pdfBase64: pdfBase64
+  };
+
+  let deliveryOk = false;
+
+  try {
+    const response = await fetch(DELIVERY_CONFIG.url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    // Apps Script can return JSON after the web-app redirect.
+    // If readable, verify the backend response.
+    if (response.ok) {
+      const result = await response.json().catch(()=>null);
+      deliveryOk = !!(result && result.ok === true);
+    }
+  } catch (deliveryError) {
+    console.error("Google Drive/Gmail delivery error:", deliveryError);
+  }
+
+  // Always keep a local Customer Copy download.
+  doc.save(filename);
+
+  if (deliveryOk) {
+    alert(
+      `Service Report ${o.reportNo} completed successfully.\n\n` +
+      `Customer PDF was sent to Google Drive and email.`
+    );
+  } else {
+    alert(
+      `Service Report ${o.reportNo} PDF was created and downloaded.\n\n` +
+      `Automatic Google Drive/email delivery could not be confirmed. ` +
+      `Please check the Apps Script execution log before sending the report again.`
+    );
+  }
+
+ }catch(err){
+  console.error("Customer PDF generation failed:",err);
+  alert("Customer PDF could not be generated. Please refresh the page and try again.");
+}
 }
 function downloadData(){generatePDF();}
