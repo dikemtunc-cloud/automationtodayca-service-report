@@ -110,7 +110,6 @@ async function generatePDF(){
   }
   doc.setFont("helvetica","bold");doc.setFontSize(19);doc.setTextColor(...navy);
   doc.text("SERVICE REPORT",W/2,15,{align:"center"});
-  doc.setFont("helvetica","bold");doc.setFontSize(7);doc.setTextColor(90,102,118);doc.text("CUSTOMER COPY",W/2,24,{align:"center"});
   doc.setFont("helvetica","normal");doc.setFontSize(8.5);doc.setTextColor(80,94,112);
   doc.text("Field Service Report & Customer Acceptance",W/2,20,{align:"center"});
 
@@ -214,7 +213,7 @@ async function generatePDF(){
   doc.setFont("helvetica","bold");doc.setFontSize(7);doc.setTextColor(...navy);
   doc.text("AUTOMATIONTODAYCA",M,281);
   doc.setFont("helvetica","normal");doc.setTextColor(100,112,128);
-  doc.text("Customer Copy • Field Service Report",W-M,281,{align:"right"});
+  doc.text("Field Service Report",W-M,281,{align:"right"});
 
   doc.save(`${o.reportNo}.pdf`);
 }
