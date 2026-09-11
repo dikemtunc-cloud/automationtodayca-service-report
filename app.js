@@ -72,7 +72,7 @@ $("#serviceForm").addEventListener("submit",e=>{
  if(!hasSig){alert("Customer signature is required.");return}
  const o=collect();localStorage.setItem("atd_last_report",JSON.stringify(o));
  counter=Math.min(counter+1,999);localStorage.setItem("atd_service_counter",String(counter));
- form.classList.add("hidden");$("#review").classList.remove("hidden");
+ form.classList.add("hidden");$(".footer-actions").classList.add("hidden");$("#review").classList.remove("hidden");
  const eqRows=(o.equipment||[]).map(e=>`<tr><td>${escapeHtml(e.equipment||"—")}</td><td>${escapeHtml(e.manufacturer||"—")}</td><td>${escapeHtml(e.model||"—")}</td><td>${escapeHtml(e.serial||"—")}</td></tr>`).join("");
  const partRows=(o.parts||[]).map(p=>`<tr><td>${escapeHtml(p.partNo||"—")}</td><td>${escapeHtml(p.partDesc||"—")}</td><td>${escapeHtml(p.qty||"—")}</td></tr>`).join("");
  const statusClass={"Completed":"review-completed","Unable to Complete":"review-unable","Follow-up Required":"review-followup","Completed – Further Work Required":"review-further"}[o.result]||"review-completed";
@@ -96,13 +96,16 @@ $("#serviceForm").addEventListener("submit",e=>{
    <div><span>Signature</span><strong class="signed">✓ Signature captured</strong></div>
  </div>
  <div class="review-acceptance">Customer acceptance has been recorded for this Service Report.</div>
- <div class="review-actions"><button type="button" class="primary-btn" onclick="generatePDF()">GENERATE CUSTOMER PDF</button><button type="button" class="secondary-btn" onclick="window.print()">PRINT REVIEW</button></div>
+ <div class="review-actions"><button type="button" id="generateCustomerPdf" class="primary-btn">GENERATE CUSTOMER PDF</button><button type="button" id="printReview" class="secondary-btn">PRINT REVIEW</button></div>
  <p class="next-report">Next Service Report: <strong>${reportNo()}</strong></p>`;
+ $("#generateCustomerPdf").addEventListener("click",generatePDF);
+ $("#printReview").addEventListener("click",()=>window.print());
 
  window.scrollTo({top:0,behavior:"smooth"});
 });
 function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
-async async function generatePDF(){
+async function generatePDF(){
+ try{
   const o=JSON.parse(localStorage.getItem("atd_last_report")||"null");
   if(!o){alert("No completed service report is available.");return}
 
@@ -250,5 +253,9 @@ async async function generatePDF(){
   doc.text("Customer Copy • Field Service Report",W-M,281,{align:"right"});
 
   doc.save(`${o.reportNo}.pdf`);
+ }catch(err){
+   console.error("Customer PDF generation failed:",err);
+   alert("Customer PDF could not be generated. Please refresh the page and try again.");
+ }
 }
 function downloadData(){generatePDF();}

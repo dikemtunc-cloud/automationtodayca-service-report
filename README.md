@@ -33,3 +33,6 @@ The final review no longer exposes raw JSON. It now presents a customer-friendly
 
 ### PDF generation fix
 Fixed the Customer PDF generator by making the asynchronous PDF function valid JavaScript and added a clear message if the PDF library has not loaded. Removed the duplicate legacy PDF buttons from the review screen.
+
+### V4 live-cache/PDF fix
+Fixed the live-repository `async async function` syntax error, removed the legacy footer action bar deterministically when entering Review, bound the PDF/print buttons explicitly, and cache-busted CSS/JS URLs to prevent stale GitHub Pages assets.
