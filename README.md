@@ -30,3 +30,6 @@ Fixed the Next button: repeatable equipment/material rows are collected without 
 
 ### Review screen update
 The final review no longer exposes raw JSON. It now presents a customer-friendly service report summary with status, equipment, work, materials, notes, signature confirmation, and PDF/print actions.
+
+### PDF generation fix
+Fixed the Customer PDF generator by making the asynchronous PDF function valid JavaScript and added a clear message if the PDF library has not loaded. Removed the duplicate legacy PDF buttons from the review screen.

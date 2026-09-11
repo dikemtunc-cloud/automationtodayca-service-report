@@ -102,10 +102,14 @@ $("#serviceForm").addEventListener("submit",e=>{
  window.scrollTo({top:0,behavior:"smooth"});
 });
 function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
-async function generatePDF(){
+async async function generatePDF(){
   const o=JSON.parse(localStorage.getItem("atd_last_report")||"null");
   if(!o){alert("No completed service report is available.");return}
 
+  if(!window.jspdf || !window.jspdf.jsPDF){
+    alert("PDF engine is not loaded. Please refresh the page and try again.");
+    return;
+  }
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"letter"});
   const W=doc.internal.pageSize.getWidth();
