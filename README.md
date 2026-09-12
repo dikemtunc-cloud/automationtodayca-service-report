@@ -1,4 +1,4 @@
-# AutomationTodayCA Service Report V3.1
+# AutomationTodayCA Service Report V8 — Google Sign-In
 
 Responsive branded field service report prototype.
 
@@ -42,3 +42,36 @@ Removed the external jsPDF-AutoTable dependency and replaced it with a built-in 
 
 ### V6 review/edit/final confirmation
 Review is now a non-final draft stage. EDIT REPORT returns to the form without losing entered data or signature. SUBMIT & CONFIRM records final acceptance and only then advances the unique service-report counter. PDF/Print actions appear after final confirmation.
+
+## V7 — Gmail + Google Drive delivery
+The GitHub Pages frontend remains static. Secure Gmail/Drive operations are handled by a Google Apps Script Web App because GitHub Pages cannot safely access GitHub Actions Secrets from browser JavaScript and browser-side SMTP credentials would be exposed.
+
+### Setup
+1. Open Google Apps Script and create a new project.
+2. Paste `Code.gs`.
+3. Set `ATD_SECRET` to a private value and set `COMPANY_EMAIL` to the AutomationTodayCA recipient address.
+4. Deploy as **Web app**, execute as **Me**, access **Anyone**.
+5. Copy the `/exec` Web App URL into `DELIVERY_CONFIG.webAppUrl` in `app.js` and use the same secret in `DELIVERY_CONFIG.token`.
+6. Authorize Google Drive and Gmail permissions on first deployment/use.
+7. Upload the V7 frontend files to GitHub Pages.
+
+### What happens on SUBMIT & CONFIRM
+The browser generates the final Customer Copy PDF, sends it to the Apps Script endpoint, and Apps Script saves the PDF in `AutomationTodayCA Service Reports` in Google Drive and emails the PDF attachment to the customer and AutomationTodayCA company email.
+
+
+## V8 — Google Sign-In
+
+The Service Report frontend is now gated by Google Sign-In. Only the authorized `automationtodayca@gmail.com` Google account is accepted.
+
+### Google Cloud OAuth configuration
+- OAuth client type: **Web application**
+- Authorized JavaScript origin: `https://dikemtunc-cloud.github.io`
+- Authorized account: `automationtodayca@gmail.com`
+- Google Client ID is already embedded in `app.js`.
+- No redirect URI is required for the Google Identity Services button flow used by this static GitHub Pages application.
+
+### GitHub Pages
+Upload/replace the V8 frontend files and allow GitHub Pages to redeploy. The page cache version is set to `app.js?v=8`.
+
+### Important security note
+The Google sign-in gate is a frontend access gate. The existing Google Apps Script endpoint and secret continue to handle Gmail/Drive delivery separately. For high-security/enterprise use, the Apps Script endpoint should also verify the Google ID token server-side before processing a delivery request.

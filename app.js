@@ -1,10 +1,27 @@
-const $=s=>document.querySelector(s);
-let counter=Number(localStorage.getItem("atd_service_counter")||"1");
-const DELIVERY_CONFIG = {
-  url: "https://script.google.com/macros/s/AKfycbyHSbleHz_s9EQR2ygDsty05QkRBsSK3aIocfO8PiiFykhYILlFsXDkRWyGPE5TS4Iw/exec",
-  token: "patetesliborek340528"
-};
+/* =========================================================
+   GOOGLE AUTHENTICATION LOCK
+   ========================================================= */
 
+const $=s=>document.querySelector(s);
+
+(function lockPageUntilGoogleLogin(){
+  const style=document.createElement("style");
+  style.id="atd-auth-lock-style";
+  style.textContent=`
+    body.atd-auth-locked > *:not(#googleLoginOverlay){
+      visibility:hidden !important;
+    }
+  `;
+  document.head.appendChild(style);
+  document.body.classList.add("atd-auth-locked");
+})();
+
+// Google Apps Script Web App endpoint. Paste the deployed /exec URL here after deployment.
+const DELIVERY_CONFIG={
+  webAppUrl:"PASTE_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE",
+  token:"CHANGE_THIS_ATD_SECRET"
+};
+let counter=Number(localStorage.getItem("atd_service_counter")||"1");
 const reportNo=()=>`SR_ATD_22AD0005${String(counter).padStart(3,"0")}`;
 $("#reportNo").textContent=reportNo(); $("#reportInput").value=reportNo();
 
@@ -78,7 +95,7 @@ function renderReview(o,finalized=false){
    ? `<div class="review-acceptance confirmed">✓ Customer acceptance has been confirmed for this Service Report.</div>`
    : `<div class="review-acceptance pending">Please review all information carefully. Use <strong>EDIT REPORT</strong> if anything needs to be corrected. Final acceptance is completed only after <strong>SUBMIT &amp; CONFIRM</strong>.</div>`;
  const actions=finalized
-   ? `<div class="review-actions"><button type="button" id="editReport" class="secondary-btn">EDIT REPORT</button><button type="button" id="generateCustomerPdf" class="primary-btn">GENERATE CUSTOMER PDF</button><button type="button" id="printReview" class="secondary-btn">PRINT REVIEW</button></div>`
+   ? `<div class="review-actions"><button type="button" id="editReport" class="secondary-btn">EDIT REPORT</button><button type="button" id="generateCustomerPdf" class="primary-btn">GENERATE CUSTOMER PDF</button><button type="button" id="sendCustomerCopy" class="primary-btn">SEND CUSTOMER COPY</button><button type="button" id="printReview" class="secondary-btn">PRINT REVIEW</button></div><div id="deliveryStatus" class="delivery-status"></div>`
    : `<div class="review-actions"><button type="button" id="editReport" class="secondary-btn">EDIT REPORT</button><button type="button" id="submitConfirm" class="primary-btn">SUBMIT &amp; CONFIRM</button></div>`;
  $("#reviewContent").innerHTML=`
  <div class="review-header"><div><div class="review-kicker">CUSTOMER REVIEW</div><h2>${escapeHtml(o.reportNo)}</h2></div><div class="review-status ${statusClass}">${escapeHtml(o.result||"Completed")}</div></div>
@@ -111,18 +128,19 @@ function renderReview(o,finalized=false){
    window.scrollTo({top:0,behavior:"smooth"});
  });
  if(finalized){
-   $("#generateCustomerPdf").addEventListener("click",generatePDF);
+   $("#generateCustomerPdf").addEventListener("click",()=>generatePDF(true));
    $("#printReview").addEventListener("click",()=>window.print());
+   $("#sendCustomerCopy").addEventListener("click",()=>deliverReport(o));
  }else{
-   $("#submitConfirm").addEventListener("click",()=>{
+   $("#submitConfirm").addEventListener("click",async()=>{
      const latest=collect();
+     latest.finalizedAt=new Date().toISOString();
      localStorage.setItem("atd_last_report",JSON.stringify(latest));
      counter=Math.min(counter+1,999);
      localStorage.setItem("atd_service_counter",String(counter));
-     latest.finalizedAt=new Date().toISOString();
-     localStorage.setItem("atd_last_report",JSON.stringify(latest));
      renderReview(latest,true);
      window.scrollTo({top:0,behavior:"smooth"});
+     await deliverReport(latest);
    });
  }
 }
@@ -143,14 +161,13 @@ $("#serviceForm").addEventListener("submit",e=>{
  window.scrollTo({top:0,behavior:"smooth"});
 });
 function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
-async function generatePDF(){
+async function generatePDF(saveFile=true){
  try{
   const o=JSON.parse(localStorage.getItem("atd_last_report")||"null");
   if(!o){alert("No completed service report is available.");return}
   if(!window.jspdf || !window.jspdf.jsPDF){
     alert("PDF engine is not loaded. Please refresh the page and try again.");return;
   }
-
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"letter"});
   const W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight(), M=14;
@@ -180,12 +197,7 @@ async function generatePDF(){
     safeRows.forEach(row=>{
       const lineCounts=row.map((v,i)=>textLines(v,widths[i]-4,7.2).length);
       const rh=Math.max(7,Math.min(22,Math.max(...lineCounts)*3.8+3));
-      if(y+rh>H-18){
-        doc.addPage();y=16;doc.setFillColor(244,247,250);doc.rect(M,y,total,rowH,"FD");
-        doc.setFont("helvetica","bold");doc.setFontSize(6.5);x=M;
-        headers.forEach((h,i)=>{doc.text(String(h),x+2,y+4.6);x+=widths[i]});
-        y+=rowH;doc.setFont("helvetica","normal");doc.setFontSize(7.2)
-      }
+      if(y+rh>H-18){doc.addPage();y=16;doc.setFillColor(244,247,250);doc.rect(M,y,total,rowH,"FD");doc.setFont("helvetica","bold");doc.setFontSize(6.5);x=M;headers.forEach((h,i)=>{doc.text(String(h),x+2,y+4.6);x+=widths[i]});y+=rowH;doc.setFont("helvetica","normal");doc.setFontSize(7.2)}
       doc.setDrawColor(205,213,222);doc.rect(M,y,total,rh,"S");x=M;
       row.forEach((v,i)=>{doc.rect(x,y,widths[i],rh,"S");doc.text(textLines(v,widths[i]-4,7.2).slice(0,5),x+2,y+4);x+=widths[i]});
       y+=rh;
@@ -193,15 +205,11 @@ async function generatePDF(){
     return y;
   }
 
-  if(logo.complete && logo.naturalWidth){
-    const ratio=logo.naturalHeight/logo.naturalWidth,lw=48,lh=Math.min(lw*ratio,18);
-    doc.addImage(logo,"PNG",M,7,lw,lh)
-  }
+  if(logo.complete && logo.naturalWidth){const ratio=logo.naturalHeight/logo.naturalWidth,lw=48,lh=Math.min(lw*ratio,18);doc.addImage(logo,"PNG",M,7,lw,lh)}
   doc.setFont("helvetica","bold");doc.setFontSize(19);doc.setTextColor(...navy);doc.text("SERVICE REPORT",W/2,15,{align:"center"});
   doc.setFont("helvetica","normal");doc.setFontSize(8.5);doc.setTextColor(80,94,112);doc.text("Field Service Report & Customer Acceptance",W/2,20,{align:"center"});
   doc.setFont("helvetica","bold");doc.setFontSize(7);doc.text("CUSTOMER COPY",W/2,24,{align:"center"});
-  doc.setFillColor(255,248,191);doc.setDrawColor(229,207,28);doc.roundedRect(W-72,7,58,16,2,2,"FD");
-  doc.setTextColor(50,58,68);doc.setFontSize(6.5);doc.text("SERVICE REPORT NO.",W-69,12.5);doc.setFont("courier","bold");doc.setFontSize(8);doc.text(o.reportNo,W-69,19);
+  doc.setFillColor(255,248,191);doc.setDrawColor(229,207,28);doc.roundedRect(W-72,7,58,16,2,2,"FD");doc.setTextColor(50,58,68);doc.setFontSize(6.5);doc.text("SERVICE REPORT NO.",W-69,12.5);doc.setFont("courier","bold");doc.setFontSize(8);doc.text(o.reportNo,W-69,19);
 
   let y=29;
   y=section("1. CUSTOMER INFORMATION",y);
@@ -237,61 +245,325 @@ async function generatePDF(){
   if(o.signature){try{doc.addImage(o.signature,"PNG",M+3,y+9,84,31)}catch(e){}}
   doc.setFillColor(242,246,249);doc.setDrawColor(210,218,226);doc.roundedRect(M+96,y+6,88,38,1.5,1.5,"FD");doc.setFont("helvetica","normal");doc.setFontSize(7.5);doc.setTextColor(65,78,95);doc.text(textLines("I acknowledge that the services described above have been performed and that this Service Report accurately records the work completed.",80,7.5),M+100,y+12);doc.setFont("helvetica","bold");doc.setFontSize(7);doc.text("Approval recorded:",M+100,y+38);doc.setFont("helvetica","normal");doc.text(new Date(o.generatedAt||Date.now()).toLocaleString("en-CA"),M+123,y+38);
   doc.setDrawColor(...navy);doc.line(M,H-14,W-M,H-14);doc.setFont("helvetica","bold");doc.setFontSize(7);doc.setTextColor(...navy);doc.text("AUTOMATIONTODAYCA",M,H-9);doc.setFont("helvetica","normal");doc.setTextColor(100,112,128);doc.text("Customer Copy • Field Service Report",W-M,H-9,{align:"right"});
+  const dataUri=doc.output("datauristring");
+  if(saveFile) doc.save(`${o.reportNo}.pdf`);
+  return dataUri;
+ }catch(err){console.error("Customer PDF generation failed:",err);alert("Customer PDF could not be generated. Please refresh the page and try again.");return null;}
+}
+async function deliverReport(o){
+ const status=$("#deliveryStatus");
+ const button=$("#sendCustomerCopy");
+ if(status) status.textContent="";
+ if(!DELIVERY_CONFIG.webAppUrl || DELIVERY_CONFIG.webAppUrl.includes("PASTE_GOOGLE_APPS_SCRIPT")){
+   if(status) status.textContent="Delivery is not configured yet. Add the Google Apps Script Web App URL first.";
+   return false;
+ }
+ try{
+   if(button){button.disabled=true;button.textContent="SENDING...";}
+   const dataUri=await generatePDF(false);
+   if(!dataUri) throw new Error("PDF generation failed");
+   const pdfBase64=dataUri.split(",")[1];
+   const payload={
+     token:DELIVERY_CONFIG.token,
+     reportNo:o.reportNo,
+     customerEmail:o.email,
+     company:o.company,
+     customerName:o.customerName,
+     pdfBase64,
+     filename:`${o.reportNo}.pdf`
+   };
+   // text/plain avoids a browser CORS preflight when calling Google Apps Script.
+   await fetch(DELIVERY_CONFIG.webAppUrl,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)});
+   if(status) status.innerHTML="✓ Customer copy delivery request sent. The PDF is being saved to Google Drive and emailed.";
+   localStorage.setItem("atd_last_delivery",new Date().toISOString());
+   return true;
+ }catch(err){
+   console.error("Delivery failed:",err);
+   if(status) status.textContent="Delivery could not be submitted. Use SEND CUSTOMER COPY to try again.";
+   return false;
+ }finally{
+   if(button){button.disabled=false;button.textContent="SEND CUSTOMER COPY";}
+ }
+}
+function downloadData(){generatePDF(true);}
 
-  // Create the PDF as a data URI so the same PDF can be sent to Apps Script.
-  const pdfDataUri = doc.output("datauristring");
-  const pdfBase64 = pdfDataUri.split(",")[1];
-  const filename = `${o.reportNo}.pdf`;
 
-  const payload = {
-    token: DELIVERY_CONFIG.token,
-    reportNo: o.reportNo,
-    company: o.company || "",
-    customerEmail: o.email || "",
-    filename: filename,
-    pdfBase64: pdfBase64
-  };
+/* =========================================================
+   GOOGLE SIGN-IN
+   AutomationTodayCA Service Report
+   ========================================================= */
 
-  let deliveryOk = false;
+const GOOGLE_CLIENT_ID =
+  "246009211153-kqkpn2d35ebrgu5osa1112i8tt4rhd21.apps.googleusercontent.com";
 
-  try {
-    const response = await fetch(DELIVERY_CONFIG.url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8"
-      },
-      body: JSON.stringify(payload)
+const ALLOWED_GOOGLE_EMAIL =
+  "automationtodayca@gmail.com";
+
+let googleAuthenticated = false;
+let googleUser = null;
+
+function loadGoogleIdentityServices(){
+  return new Promise((resolve,reject)=>{
+    if(window.google && window.google.accounts){
+      resolve();
+      return;
+    }
+
+    const existing=document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+
+    if(existing){
+      existing.addEventListener("load",resolve,{once:true});
+      existing.addEventListener("error",reject,{once:true});
+      return;
+    }
+
+    const script=document.createElement("script");
+    script.src="https://accounts.google.com/gsi/client";
+    script.async=true;
+    script.defer=true;
+    script.onload=resolve;
+    script.onerror=reject;
+    document.head.appendChild(script);
+  });
+}
+
+function decodeGoogleJwt(token){
+  try{
+    const parts=String(token||"").split(".");
+    if(parts.length!==3) throw new Error("Invalid Google credential.");
+
+    const base64=parts[1].replace(/-/g,"+").replace(/_/g,"/");
+    const padded=base64+"=".repeat((4-base64.length%4)%4);
+    const json=decodeURIComponent(
+      atob(padded)
+        .split("")
+        .map(c=>"%"+("00"+c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(json);
+  }catch(err){
+    console.error("Google token decode error:",err);
+    return null;
+  }
+}
+
+function handleGoogleCredential(response){
+  const user=decodeGoogleJwt(response && response.credential);
+
+  if(!user){
+    showGoogleLoginError("Google sign-in failed. Please try again.");
+    return;
+  }
+
+  const email=String(user.email||"").trim().toLowerCase();
+
+  if(email!==ALLOWED_GOOGLE_EMAIL.toLowerCase()){
+    googleAuthenticated=false;
+    googleUser=null;
+    sessionStorage.removeItem("atd_google_authenticated");
+    sessionStorage.removeItem("atd_google_email");
+    sessionStorage.removeItem("atd_google_name");
+    showGoogleLoginError(
+      "Access denied. This Service Report application is restricted to the authorized AutomationTodayCA Google account."
+    );
+    return;
+  }
+
+  if(user.email_verified!==true){
+    showGoogleLoginError("The Google account email could not be verified.");
+    return;
+  }
+
+  googleAuthenticated=true;
+  googleUser=user;
+
+  sessionStorage.setItem("atd_google_authenticated","true");
+  sessionStorage.setItem("atd_google_email",email);
+  sessionStorage.setItem("atd_google_name",user.name||"");
+
+  unlockServiceReport();
+}
+
+function showGoogleLoginError(message){
+  const el=document.getElementById("googleLoginError");
+  if(el) el.textContent=message;
+}
+
+function createGoogleLoginScreen(){
+  if(document.getElementById("googleLoginOverlay")) return;
+
+  const overlay=document.createElement("div");
+  overlay.id="googleLoginOverlay";
+  overlay.innerHTML=`
+    <div class="atd-login-overlay">
+      <div class="atd-login-card">
+        <div class="atd-login-logo">
+          <img src="atd-logo.png" alt="AutomationTodayCA" onerror="this.style.display='none'">
+        </div>
+        <div class="atd-login-brand">AUTOMATIONTODAYCA</div>
+        <div class="atd-login-title">Service Report</div>
+        <div class="atd-login-subtitle">Authorized access only</div>
+        <div id="googleLoginButton"></div>
+        <div class="atd-login-note">Sign in with your authorized Google account</div>
+        <div id="googleLoginError" role="alert"></div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const style=document.createElement("style");
+  style.id="atd-google-login-style";
+  style.textContent=`
+    #googleLoginOverlay{
+      position:fixed;
+      inset:0;
+      z-index:999999;
+      visibility:visible !important;
+    }
+    .atd-login-overlay{
+      position:fixed;
+      inset:0;
+      background:linear-gradient(135deg,#0f2b5b 0%,#173c78 52%,#eef2f6 100%);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      box-sizing:border-box;
+    }
+    .atd-login-card{
+      width:min(430px,100%);
+      background:#fff;
+      border-radius:16px;
+      padding:42px 38px;
+      text-align:center;
+      box-shadow:0 25px 70px rgba(0,0,0,.28);
+      box-sizing:border-box;
+    }
+    .atd-login-logo{
+      height:64px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      margin-bottom:10px;
+    }
+    .atd-login-logo img{
+      max-height:64px;
+      max-width:190px;
+      object-fit:contain;
+    }
+    .atd-login-brand{
+      color:#0f2b5b;
+      font-size:20px;
+      font-weight:800;
+      letter-spacing:.5px;
+      margin-bottom:16px;
+    }
+    .atd-login-title{
+      color:#182536;
+      font-size:28px;
+      font-weight:800;
+      margin-bottom:6px;
+    }
+    .atd-login-subtitle{
+      color:#718096;
+      font-size:14px;
+      margin-bottom:28px;
+    }
+    #googleLoginButton{
+      min-height:44px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      margin:0 auto;
+    }
+    .atd-login-note{
+      margin-top:20px;
+      color:#8a95a5;
+      font-size:12px;
+      line-height:1.5;
+    }
+    #googleLoginError{
+      color:#b42318;
+      font-size:13px;
+      line-height:1.45;
+      margin-top:14px;
+      min-height:18px;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function unlockServiceReport(){
+  googleAuthenticated=true;
+  document.body.classList.remove("atd-auth-locked");
+  const overlay=document.getElementById("googleLoginOverlay");
+  if(overlay) overlay.remove();
+  console.log("AutomationTodayCA authenticated:",googleUser && googleUser.email);
+}
+
+function checkGoogleSession(){
+  const authenticated=sessionStorage.getItem("atd_google_authenticated");
+  const email=sessionStorage.getItem("atd_google_email");
+
+  if(
+    authenticated==="true" &&
+    email &&
+    email.toLowerCase()===ALLOWED_GOOGLE_EMAIL.toLowerCase()
+  ){
+    googleAuthenticated=true;
+    googleUser={
+      email,
+      name:sessionStorage.getItem("atd_google_name")||""
+    };
+    unlockServiceReport();
+    return true;
+  }
+
+  return false;
+}
+
+async function startGoogleAuthentication(){
+  createGoogleLoginScreen();
+
+  try{
+    await loadGoogleIdentityServices();
+
+    google.accounts.id.initialize({
+      client_id:GOOGLE_CLIENT_ID,
+      callback:handleGoogleCredential,
+      auto_select:false,
+      cancel_on_tap_outside:false
     });
 
-    // Apps Script can return JSON after the web-app redirect.
-    // If readable, verify the backend response.
-    if (response.ok) {
-      const result = await response.json().catch(()=>null);
-      deliveryOk = !!(result && result.ok === true);
-    }
-  } catch (deliveryError) {
-    console.error("Google Drive/Gmail delivery error:", deliveryError);
-  }
-
-  // Always keep a local Customer Copy download.
-  doc.save(filename);
-
-  if (deliveryOk) {
-    alert(
-      `Service Report ${o.reportNo} completed successfully.\n\n` +
-      `Customer PDF was sent to Google Drive and email.`
+    google.accounts.id.renderButton(
+      document.getElementById("googleLoginButton"),
+      {
+        type:"standard",
+        theme:"outline",
+        size:"large",
+        text:"signin_with",
+        shape:"rectangular",
+        logo_alignment:"left",
+        width:320
+      }
     );
-  } else {
-    alert(
-      `Service Report ${o.reportNo} PDF was created and downloaded.\n\n` +
-      `Automatic Google Drive/email delivery could not be confirmed. ` +
-      `Please check the Apps Script execution log before sending the report again.`
-    );
+  }catch(err){
+    console.error("Google authentication initialization failed:",err);
+    showGoogleLoginError("Google Sign-In could not be initialized. Please refresh the page.");
   }
+}
 
- }catch(err){
-  console.error("Customer PDF generation failed:",err);
-  alert("Customer PDF could not be generated. Please refresh the page and try again.");
+function googleLogout(){
+  sessionStorage.removeItem("atd_google_authenticated");
+  sessionStorage.removeItem("atd_google_email");
+  sessionStorage.removeItem("atd_google_name");
+  googleAuthenticated=false;
+  googleUser=null;
+  location.reload();
 }
+
+/* Start authentication after the existing Service Report code has loaded. */
+if(!checkGoogleSession()){
+  startGoogleAuthentication();
 }
-function downloadData(){generatePDF();}
