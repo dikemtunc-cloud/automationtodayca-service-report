@@ -294,7 +294,7 @@ function downloadData(){generatePDF(true);}
    ========================================================= */
 
 const GOOGLE_CLIENT_ID =
-  "246009211153-kqkpn2d35ebrgu5osa1112i8tt4rhd21.apps.googleusercontent.com";
+  "246009211153-kqkpn2d35ebrgu5osa1l12i8tt4rhd21.apps.googleusercontent.com";
 
 const ALLOWED_GOOGLE_EMAIL =
   "automationtodayca@gmail.com";
