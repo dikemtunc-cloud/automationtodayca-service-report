@@ -1,15 +1,16 @@
 /**
- * AutomationTodayCA Service Report delivery backend
+ * AutomationTodayCA Service Report — Google Apps Script backend
  *
- * Deploy this Google Apps Script as a Web App:
+ * Deploy as Web app:
  *   Execute as: Me
  *   Who has access: Anyone
  *
- * Then paste the /exec URL into app.js DELIVERY_CONFIG.webAppUrl
- * and use the same secret in DELIVERY_CONFIG.token and ATD_SECRET below.
+ * The frontend sends a PDF as base64. This script saves the PDF to
+ * Google Drive and emails the customer copy.
  */
-const ATD_SECRET = 'CHANGE_THIS_ATD_SECRET';
-const COMPANY_EMAIL = 'YOUR_COMPANY_GMAIL_OR_DOMAIN_EMAIL';
+
+const ATD_SECRET = 'patetesliborek340528';
+const COMPANY_EMAIL = 'automationtodayca@gmail.com';
 const DRIVE_FOLDER_NAME = 'AutomationTodayCA Service Reports';
 
 function doGet() {
@@ -20,44 +21,94 @@ function doGet() {
 
 function doPost(e) {
   try {
-    const data = JSON.parse(e.postData.contents || '{}');
-    if (data.token !== ATD_SECRET) throw new Error('Unauthorized request.');
-    if (!data.reportNo || !data.pdfBase64) throw new Error('Missing report number or PDF.');
+    if (!e || !e.postData || !e.postData.contents) {
+      throw new Error('Empty request.');
+    }
+
+    const data = JSON.parse(e.postData.contents);
+
+    if (String(data.token || '') !== ATD_SECRET) {
+      throw new Error('Unauthorized request.');
+    }
+
+    if (!data.reportNo) {
+      throw new Error('Missing report number.');
+    }
+
+    if (!data.pdfBase64) {
+      throw new Error('Missing PDF data.');
+    }
 
     const bytes = Utilities.base64Decode(data.pdfBase64);
-    const blob = Utilities.newBlob(bytes, MimeType.PDF, data.filename || (data.reportNo + '.pdf'));
+    const filename = data.filename || (data.reportNo + '.pdf');
+    const blob = Utilities.newBlob(bytes, MimeType.PDF, filename);
 
     const folder = getOrCreateFolder_(DRIVE_FOLDER_NAME);
     const file = folder.createFile(blob);
 
     const subject = 'AutomationTodayCA Service Report ' + data.reportNo;
+
     const body = [
-      'Please find attached the AutomationTodayCA Service Report.',
+      'Dear Customer,',
+      '',
+      'Please find attached your AutomationTodayCA Service Report.',
       '',
       'Service Report No.: ' + data.reportNo,
       'Customer: ' + (data.company || ''),
       '',
-      'This is the Customer Copy generated after customer acceptance.'
+      'This Customer Copy was generated after customer acceptance.',
+      '',
+      'Thank you,',
+      'AutomationTodayCA',
+      'Reliable Solutions for a Smarter Tomorrow'
     ].join('\n');
 
-    const recipients = uniqueEmails_([data.customerEmail, COMPANY_EMAIL]);
-    if (recipients.length) {
-      GmailApp.sendEmail(recipients.join(','), subject, body, {attachments:[file.getBlob()]});
+    const customerEmail = String(data.customerEmail || '').trim();
+    const recipients = uniqueEmails_([customerEmail, COMPANY_EMAIL]);
+
+    if (recipients.length === 0) {
+      throw new Error('No valid email recipient was supplied.');
     }
 
-    return json_({ok:true, reportNo:data.reportNo, driveFileId:file.getId()});
+    GmailApp.sendEmail(
+      recipients.join(','),
+      subject,
+      body,
+      {
+        attachments: [file.getBlob()],
+        name: 'AutomationTodayCA'
+      }
+    );
+
+    return json_({
+      ok: true,
+      reportNo: data.reportNo,
+      driveFileId: file.getId(),
+      recipients: recipients
+    });
+
   } catch (err) {
-    return json_({ok:false, error:String(err.message || err)});
+    console.error(err);
+    return json_({
+      ok: false,
+      error: String(err && err.message ? err.message : err)
+    });
   }
 }
 
 function getOrCreateFolder_(name) {
   const folders = DriveApp.getFoldersByName(name);
-  return folders.hasNext() ? folders.next() : DriveApp.createFolder(name);
+  if (folders.hasNext()) return folders.next();
+  return DriveApp.createFolder(name);
 }
 
 function uniqueEmails_(values) {
-  return [...new Set(values.filter(Boolean).map(v => String(v).trim().toLowerCase()).filter(v => v.includes('@')))];
+  return [...new Set(
+    values
+      .filter(Boolean)
+      .map(v => String(v).trim().toLowerCase())
+      .filter(v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))
+  )];
 }
 
 function json_(obj) {
