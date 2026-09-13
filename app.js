@@ -81,23 +81,14 @@ function clearSignature(){ctx.clearRect(0,0,canvas.width,canvas.height);hasSig=f
 function collect(){
  const fd=new FormData($("#serviceForm")),o=Object.fromEntries(fd.entries());
  o.reportNo=reportNo();
-
- // Dynamic customer contacts.
- o.customerEmails=[...document.querySelectorAll('#emailList input[name="email"]')]
-   .map(i=>i.value.trim()).filter(Boolean);
- o.customerPhones=[...document.querySelectorAll('#phoneList input[name="phone"]')]
-   .map(i=>i.value.trim()).filter(Boolean);
-
- // Keep first values for compatibility with the existing report/PDF flow.
+ o.customerEmails=[...document.querySelectorAll('#emailList input[name="email"]')].map(i=>i.value.trim()).filter(Boolean);
+ o.customerPhones=[...document.querySelectorAll('#phoneList input[name="phone"]')].map(i=>i.value.trim()).filter(Boolean);
  o.email=o.customerEmails[0]||"";
  o.phone=o.customerPhones[0]||"";
-
  const readInputs=el=>Object.fromEntries([...el.querySelectorAll("input,select,textarea")].filter(i=>i.name).map(i=>[i.name,i.value]));
  o.equipment=[...document.querySelectorAll(".equipment")].map(readInputs);
  o.parts=[...document.querySelectorAll(".part-row")].map(readInputs).filter(x=>x.partNo||x.partDesc||x.qty);
- o.signature=hasSig?canvas.toDataURL("image/png"):"";
- o.generatedAt=new Date().toISOString();
- return o;
+ o.signature=hasSig?canvas.toDataURL("image/png"):"";o.generatedAt=new Date().toISOString();return o;
 }
 function renderReview(o,finalized=false){
  const eqRows=(o.equipment||[]).map(e=>`<tr><td>${escapeHtml(e.equipment||"—")}</td><td>${escapeHtml(e.manufacturer||"—")}</td><td>${escapeHtml(e.model||"—")}</td><td>${escapeHtml(e.serial||"—")}</td></tr>`).join("");
@@ -225,12 +216,12 @@ async function generatePDF(saveFile=true){
 
   let y=29;
   y=section("1. CUSTOMER INFORMATION",y);
-  field(M,y,58,"Company Name",o.company,true);field(M+61,y,58,"Contact Person",o.contact);field(M+122,y,62,"Email",o.customerEmails&&o.customerEmails.length?o.customerEmails.join(", "):o.email);y+=16;
-  field(M,y,58,"Phone",o.customerPhones&&o.customerPhones.length?o.customerPhones.join(", "):o.phone);field(M+61,y,88,"Service Address",o.address);field(M+152,y,32,"City",o.city);y+=16;
+  field(M,y,58,"Company Name",o.company,true);field(M+61,y,58,"Contact Person",o.contact);field(M+122,y,62,"Email",o.email);y+=16;
+  field(M,y,58,"Phone",o.phone);field(M+61,y,88,"Service Address",o.address);field(M+152,y,32,"City",o.city);y+=16;
   field(M,y,58,"Province",o.province);field(M+61,y,58,"Postal Code",o.postal);y+=19;
 
   y=section("2. SERVICE INFORMATION",y);
-  field(M,y,40,"Service Date",o.serviceDate,true);field(M+43,y,43,"Start Time",o.startTime);field(M+89,y,43,"End Time",o.endTime);field(M+135,y,32,"PO Number",o.po);field(M+170,y,28,"Work Order",o.workOrder);y+=16;field(M,y,184,"Technician",o.technician);y+=16;
+  field(M,y,43,"Service Date",o.serviceDate,true);field(M+46,y,48,"Technician",o.technician);field(M+97,y,38,"PO Number",o.po);field(M+138,y,46,"Work Order",o.workOrder);y+=16;
   field(M,y,184,"Service Type",o.serviceType);y+=19;
 
   y=section("3. EQUIPMENT INFORMATION",y);
@@ -278,8 +269,7 @@ async function deliverReport(o){
    const payload={
      googleCredential,
      reportNo:o.reportNo,
-     customerEmails:o.customerEmails||[],
-     customerEmail:(o.customerEmails&&o.customerEmails[0])||o.email||"",
+     customerEmails:o.customerEmails||[],customerEmail:o.email,
      company:o.company,
      customerName:o.customerName,
      pdfBase64,

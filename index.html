@@ -27,17 +27,17 @@
   </div>
 
   <div class="progress">
-    <div class="step active" data-step="1"><b>1</b><span>Customer</span></div>
+    <div class="step active"><b>1</b><span>Customer</span></div>
     <div class="line"></div>
-    <div class="step" data-step="2"><b>2</b><span>Service Info</span></div>
+    <div class="step"><b>2</b><span>Service Info</span></div>
     <div class="line"></div>
-    <div class="step" data-step="3"><b>3</b><span>Equipment</span></div>
+    <div class="step"><b>3</b><span>Equipment</span></div>
     <div class="line"></div>
-    <div class="step" data-step="4"><b>4</b><span>Work &amp; Materials</span></div>
+    <div class="step"><b>4</b><span>Work &amp; Materials</span></div>
     <div class="line"></div>
-    <div class="step" data-step="5"><b>5</b><span>Review &amp; Sign</span></div>
+    <div class="step"><b>5</b><span>Review &amp; Sign</span></div>
     <div class="line"></div>
-    <div class="step" data-step="6"><b>6</b><span>Complete</span></div>
+    <div class="step"><b>6</b><span>Complete</span></div>
   </div>
 
 <form id="serviceForm">
@@ -47,23 +47,25 @@
     <label class="yellow-field">Company Name *<input name="company" placeholder="e.g. ABC Manufacturing Inc." required></label>
     <label>Contact Person *<input name="contact" placeholder="e.g. John Smith" required></label>
     <div class="dynamic-contact-field">
-  <div class="dynamic-label">Email *</div>
-  <div id="emailList" class="dynamic-list">
-    <div class="contact-row">
-      <input type="email" name="email" placeholder="e.g. john@company.com" required>
-      <button type="button" class="remove-contact" aria-label="Remove email" onclick="removeContact(this, 'emailList')">×</button>
+  <label>Email *
+    <div id="emailList" class="dynamic-list">
+      <div class="contact-row">
+        <input type="email" name="email" placeholder="e.g. john@company.com" required>
+        <button type="button" class="remove-contact" onclick="removeContact(this,'emailList')">×</button>
+      </div>
     </div>
-  </div>
+  </label>
   <button type="button" class="add-contact" onclick="addContact('email')">＋ Add Email</button>
 </div>
     <div class="dynamic-contact-field">
-  <div class="dynamic-label">Phone</div>
-  <div id="phoneList" class="dynamic-list">
-    <div class="contact-row">
-      <input name="phone" placeholder="e.g. 416-555-1234">
-      <button type="button" class="remove-contact" aria-label="Remove phone" onclick="removeContact(this, 'phoneList')">×</button>
+  <label>Phone
+    <div id="phoneList" class="dynamic-list">
+      <div class="contact-row">
+        <input name="phone" placeholder="e.g. 416-555-1234">
+        <button type="button" class="remove-contact" onclick="removeContact(this,'phoneList')">×</button>
+      </div>
     </div>
-  </div>
+  </label>
   <button type="button" class="add-contact" onclick="addContact('phone')">＋ Add Phone</button>
 </div>
     <label class="full">Service Address<input name="address" placeholder="e.g. 123 Industrial Road"></label>
@@ -175,136 +177,45 @@
 </main>
 
 <script>
-/* =========================================================
-   FORM STATUS / DYNAMIC CONTACT FIELDS
-   ========================================================= */
 (function(){
-  function fieldFilled(el){
-    return String(el && el.value || '').trim() !== '';
-  }
-
-  function requiredFields(card){
-    return Array.from(card.querySelectorAll('input[required], textarea[required], select[required]'));
-  }
-
-  function visibleFields(card){
-    return Array.from(card.querySelectorAll('input:not([type="hidden"]), textarea, select'))
-      .filter(function(el){ return !el.disabled && !el.readOnly; });
-  }
-
-  function refreshFieldHighlights(){
-    document.querySelectorAll('#serviceForm input[required], #serviceForm textarea[required], #serviceForm select[required]')
-      .forEach(function(el){
-        el.classList.toggle('required-missing', !fieldFilled(el) || !el.checkValidity());
-      });
-  }
-
-  window.updateSectionStatus=function(){
-    const cards=Array.from(document.querySelectorAll('#serviceForm > section.card'));
-    cards.forEach(function(card,index){
-      const req=requiredFields(card);
-      const all=visibleFields(card);
-      const missingRequired=req.some(function(el){
-        return !fieldFilled(el) || !el.checkValidity();
-      });
-      const missingOptional=all.some(function(el){
-        return !el.required && !fieldFilled(el);
-      });
-
-      let state=missingRequired ? 'incomplete' : (missingOptional ? 'partial' : 'complete');
+  function val(el){ return String(el.value||"").trim(); }
+  function updateStatus(){
+    document.querySelectorAll("#serviceForm > section.card").forEach(function(card,idx){
+      const req=[...card.querySelectorAll("input[required],textarea[required],select[required]")];
+      const all=[...card.querySelectorAll("input:not([type=hidden]),textarea,select")].filter(e=>!e.disabled&&!e.readOnly);
+      const bad=req.some(e=>!val(e)||!e.checkValidity());
+      const optionalMissing=all.some(e=>!e.required&&!val(e));
+      const state=bad?"incomplete":(optionalMissing?"partial":"complete");
       card.dataset.status=state;
-
-      const step=document.querySelector('.step[data-step="'+(index+1)+'"]');
+      const step=document.querySelector('.step[data-step="'+(idx+1)+'"]');
       if(step){
-        step.classList.remove('status-incomplete','status-partial','status-complete');
-        step.classList.add('status-'+state);
+        step.classList.remove("status-incomplete","status-partial","status-complete");
+        step.classList.add("status-"+state);
       }
     });
-
-    // Step 6 represents overall completion.
-    const allRequiredOK=cards.every(function(card){
-      return !requiredFields(card).some(function(el){
-        return !fieldFilled(el) || !el.checkValidity();
-      });
-    });
-    const step6=document.querySelector('.step[data-step="6"]');
-    if(step6){
-      step6.classList.remove('status-incomplete','status-partial','status-complete');
-      step6.classList.add(allRequiredOK ? 'status-complete' : 'status-incomplete');
-    }
-
-    refreshFieldHighlights();
-  };
-
+    document.querySelectorAll("#serviceForm input[required],#serviceForm textarea[required],#serviceForm select[required]")
+      .forEach(e=>e.classList.toggle("required-missing",!val(e)||!e.checkValidity()));
+  }
   window.addContact=function(type){
-    const list=document.getElementById(type+'List');
-    if(!list) return;
-
-    const row=document.createElement('div');
-    row.className='contact-row';
-
-    const input=document.createElement('input');
-    input.name=type;
-    input.required=(type==='email');
-    input.placeholder=(type==='email') ? 'e.g. john@company.com' : 'e.g. 416-555-1234';
-    if(type==='email') input.type='email';
-
-    const remove=document.createElement('button');
-    remove.type='button';
-    remove.className='remove-contact';
-    remove.setAttribute('aria-label','Remove '+type);
-    remove.textContent='×';
-    remove.onclick=function(){ removeContact(remove,type+'List'); };
-
-    row.appendChild(input);
-    row.appendChild(remove);
-    list.appendChild(row);
-
-    input.addEventListener('input',window.updateSectionStatus);
-    input.addEventListener('change',window.updateSectionStatus);
-    input.focus();
-    window.updateSectionStatus();
+    const list=document.getElementById(type+"List");
+    const row=document.createElement("div"); row.className="contact-row";
+    const input=document.createElement("input");
+    input.name=type; input.type=type==="email"?"email":"text";
+    input.placeholder=type==="email"?"e.g. john@company.com":"e.g. 416-555-1234";
+    if(type==="email") input.required=false;
+    const btn=document.createElement("button"); btn.type="button"; btn.className="remove-contact"; btn.textContent="×";
+    btn.onclick=function(){removeContact(btn,type+"List")};
+    row.append(input,btn); list.appendChild(row); input.focus(); updateStatus();
   };
-
-  window.removeContact=function(button,listId){
-    const list=document.getElementById(listId);
-    if(!list) return;
-
-    const rows=list.querySelectorAll('.contact-row');
-    if(rows.length<=1){
-      const input=rows[0] && rows[0].querySelector('input');
-      if(input){
-        input.value='';
-        input.focus();
-      }
-    }else{
-      button.closest('.contact-row').remove();
-    }
-    window.updateSectionStatus();
+  window.removeContact=function(btn,id){
+    const list=document.getElementById(id), rows=list.querySelectorAll(".contact-row");
+    if(rows.length===1){ rows[0].querySelector("input").value=""; }
+    else btn.closest(".contact-row").remove();
+    updateStatus();
   };
-
-  function bind(){
-    document.querySelectorAll('#serviceForm input, #serviceForm textarea, #serviceForm select')
-      .forEach(function(el){
-        el.addEventListener('input',window.updateSectionStatus);
-        el.addEventListener('change',window.updateSectionStatus);
-        el.addEventListener('blur',window.updateSectionStatus);
-      });
-
-    document.querySelectorAll('.type,.status').forEach(function(btn){
-      btn.addEventListener('click',function(){
-        setTimeout(window.updateSectionStatus,0);
-      });
-    });
-
-    window.updateSectionStatus();
-  }
-
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',bind);
-  }else{
-    bind();
-  }
+  document.addEventListener("input",function(e){if(e.target.closest("#serviceForm"))updateStatus()});
+  document.addEventListener("change",function(e){if(e.target.closest("#serviceForm"))updateStatus()});
+  document.addEventListener("DOMContentLoaded",updateStatus);
 })();
 </script>
 

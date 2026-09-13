@@ -37,66 +37,13 @@
 
 .review-actions .primary-btn{background:#173c78;color:#fff;border-color:#173c78}.review-actions .secondary-btn{background:#fff;color:#173c78}.review-acceptance.pending{background:#fff9d6;border-left:4px solid #e5c900}.review-acceptance.confirmed{background:#eef9f0;border-left:4px solid #4da85f}.review-actions{flex-wrap:wrap}
 
-/* =========================================================
-   V11 FORM STATUS / DYNAMIC CONTACTS
-   ========================================================= */
-.progress .step.status-incomplete b{
-  background:#d93025 !important;
-  color:#fff !important;
-}
-.progress .step.status-partial b{
-  background:#f4b400 !important;
-  color:#fff !important;
-}
-.progress .step.status-complete b{
-  background:#188038 !important;
-  color:#fff !important;
-}
-.required-missing{
-  background:#fff3cd !important;
-  border-color:#f4b400 !important;
-  box-shadow:0 0 0 2px rgba(244,180,0,.18) !important;
-}
-.dynamic-contact-field{
-  display:block;
-}
-.dynamic-label{
-  font-weight:600;
-  margin-bottom:6px;
-}
-.dynamic-list{
-  display:flex;
-  flex-direction:column;
-  gap:7px;
-}
-.contact-row{
-  display:flex;
-  gap:7px;
-  align-items:center;
-}
-.contact-row input{
-  flex:1;
-  min-width:0;
-}
-.remove-contact{
-  width:34px;
-  height:34px;
-  flex:0 0 34px;
-  border:1px solid #d0d7de;
-  border-radius:7px;
-  background:#fff;
-  cursor:pointer;
-  font-size:20px;
-  line-height:1;
-}
-.remove-contact:hover{
-  background:#f6f8fa;
-}
-.add-contact{
-  margin-top:7px;
-  border:0;
-  background:transparent;
-  padding:3px 0;
-  cursor:pointer;
-  font-weight:600;
-}
+/* Dynamic contact fields and section status */
+.dynamic-list{display:flex;flex-direction:column;gap:6px}
+.contact-row{display:flex;gap:6px;align-items:center}
+.contact-row input{flex:1;min-width:0}
+.remove-contact{width:34px;height:34px;border:1px solid #d0d7de;border-radius:6px;background:#fff;font-size:20px;cursor:pointer}
+.add-contact{border:0;background:transparent;padding:5px 0;cursor:pointer;font-weight:600}
+.required-missing{background:#fff3cd!important;border-color:#f4b400!important}
+.progress .step.status-incomplete b{background:#d93025!important;color:#fff!important}
+.progress .step.status-partial b{background:#f4b400!important;color:#fff!important}
+.progress .step.status-complete b{background:#188038!important;color:#fff!important}
