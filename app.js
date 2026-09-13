@@ -24,6 +24,99 @@ let counter=Number(localStorage.getItem("atd_service_counter")||"1");
 const reportNo=()=>`SR_ATD_22AD0005${String(counter).padStart(3,"0")}`;
 $("#reportNo").textContent=reportNo(); $("#reportInput").value=reportNo();
 
+/* =========================================================
+   FORM STATUS / PROGRESS INDICATORS
+   Red = required information missing
+   Yellow = required information complete, optional information missing
+   Green = section fully complete
+   ========================================================= */
+
+function getSectionCards(){
+  return [...document.querySelectorAll("#serviceForm > section.card")];
+}
+
+function fieldHasValue(el){
+  if(!el) return false;
+  return String(el.value || "").trim() !== "";
+}
+
+function getSectionStatus(section,index){
+  if(index===5){
+    return localStorage.getItem("atd_last_report") ? "green" : "red";
+  }
+
+  const required=[...section.querySelectorAll("input[required],select[required],textarea[required]")];
+  const requiredMissing=required.some(el=>!fieldHasValue(el));
+
+  // Signature is required even though it is drawn on a canvas rather than a form input.
+  if(index===4 && !hasSig) return "red";
+  if(requiredMissing) return "red";
+
+  // Section 3: equipment is optional as a whole, but once a row is used,
+  // all equipment fields in that row should be completed.
+  if(index===2){
+    const rows=[...section.querySelectorAll(".equipment")];
+    const usedRows=rows.filter(row=>[...row.querySelectorAll("input")].some(fieldHasValue));
+    if(!usedRows.length) return "yellow";
+    return usedRows.some(row=>[...row.querySelectorAll("input")].some(el=>!fieldHasValue(el)))
+      ? "yellow"
+      : "green";
+  }
+
+  // Section 4: required work/result fields are complete at this point.
+  // Any visible optional field that remains empty keeps the section yellow.
+  if(index===3){
+    const optionalInputs=[...section.querySelectorAll("input:not([required]):not([type=hidden]),textarea:not([required])")];
+    const optionalMissing=optionalInputs.some(el=>!fieldHasValue(el));
+    return optionalMissing ? "yellow" : "green";
+  }
+
+  const optional=[...section.querySelectorAll("input:not([required]):not([type=hidden]),select:not([required]),textarea:not([required])")];
+  const optionalMissing=optional.some(el=>{
+    if(el.closest(".locked")) return false;
+    if(el.disabled) return false;
+    return !fieldHasValue(el);
+  });
+
+  return optionalMissing ? "yellow" : "green";
+}
+
+function updateProgress(){
+  const cards=getSectionCards();
+  const steps=[...document.querySelectorAll(".progress .step")];
+  steps.forEach((step,index)=>{
+    step.classList.remove("state-red","state-yellow","state-green","active");
+    const state=getSectionStatus(cards[index],index);
+    step.classList.add("state-"+state);
+    if(index===0) step.classList.add("active");
+    const b=step.querySelector("b");
+    if(b) b.textContent=index===5 && state==="green" ? "✓" : String(index+1);
+  });
+}
+
+function addCustomerEmail(){
+  const container=$("#customerEmails");
+  if(!container) return;
+  const row=document.createElement("div");
+  row.className="email-row";
+  row.innerHTML='<input type="email" name="customerEmailExtra[]" placeholder="e.g. accounting@company.com"><button type="button" class="remove-email" onclick="removeCustomerEmail(this)">×</button>';
+  container.appendChild(row);
+  bindFormStatusListeners(row);
+  updateProgress();
+}
+
+function removeCustomerEmail(btn){
+  const row=btn.closest(".email-row");
+  if(row && !btn.disabled){ row.remove(); updateProgress(); }
+}
+
+function bindFormStatusListeners(root=document){
+  root.querySelectorAll("input,select,textarea").forEach(el=>{
+    el.addEventListener("input",updateProgress);
+    el.addEventListener("change",updateProgress);
+  });
+}
+
 const now=new Date(), localDate=new Date(now-now.getTimezoneOffset()*60000).toISOString().slice(0,10);
 document.querySelector('[name="serviceDate"]').value=localDate;
 function updateApprovalTime(){const n=new Date();$("#approvalTime").textContent=n.toLocaleString("en-CA",{dateStyle:"medium",timeStyle:"short"});}
@@ -32,6 +125,7 @@ updateApprovalTime(); setInterval(updateApprovalTime,30000);
 document.querySelectorAll(".type").forEach(b=>b.addEventListener("click",()=>{
  document.querySelectorAll(".type").forEach(x=>x.classList.remove("active"));b.classList.add("active");
  document.querySelector('[name="serviceType"]').value=b.dataset.value;
+ updateProgress();
 }));
 const statusIcons={
  "Completed":"✓",
@@ -46,6 +140,7 @@ document.querySelectorAll(".status").forEach(b=>{
    document.querySelectorAll(".status").forEach(x=>x.classList.remove("active"));
    b.classList.add("active");
    document.querySelector('[name="result"]').value=b.dataset.value;
+   updateProgress();
  });
 });
 
@@ -60,13 +155,17 @@ function addEquipment(){
 <label>Location / Tag<input name="location" placeholder="e.g. Line 2 – Oven #3"></label>
 </div><button type="button" class="remove" onclick="removeRow(this)">🗑</button>`;
  $("#equipmentList").appendChild(w);
+ bindFormStatusListeners(w);
+ updateProgress();
 }
 function addPart(){
  const r=document.createElement("div");r.className="part-row";
  r.innerHTML=`<input placeholder="Part No." name="partNo"><input placeholder="Description" name="partDesc"><input placeholder="Qty" name="qty" type="number" min="0" step="1"><button type="button" onclick="removeRow(this)">×</button>`;
  $("#partsList").appendChild(r);
+ bindFormStatusListeners(r);
+ updateProgress();
 }
-function removeRow(btn){const row=btn.closest(".repeat,.part-row");if(row&&row.parentElement.children.length>1)row.remove();}
+function removeRow(btn){const row=btn.closest(".repeat,.part-row");if(row&&row.parentElement.children.length>1){row.remove();updateProgress();}}
 
 const canvas=$("#signature"),ctx=canvas.getContext("2d");let drawing=false,hasSig=false;
 function pos(e){const r=canvas.getBoundingClientRect(),p=e.touches?e.touches[0]:e;return[(p.clientX-r.left)*canvas.width/r.width,(p.clientY-r.top)*canvas.height/r.height]}
@@ -76,12 +175,17 @@ function end(){drawing=false}
 ctx.lineWidth=3;ctx.lineCap="round";ctx.lineJoin="round";
 ["mousedown","mousemove","mouseup","mouseleave"].forEach(ev=>canvas.addEventListener(ev,{mousedown:start,mousemove:move,mouseup:end,mouseleave:end}[ev]));
 canvas.addEventListener("touchstart",start,{passive:false});canvas.addEventListener("touchmove",move,{passive:false});canvas.addEventListener("touchend",end);
-function clearSignature(){ctx.clearRect(0,0,canvas.width,canvas.height);hasSig=false}
+function clearSignature(){ctx.clearRect(0,0,canvas.width,canvas.height);hasSig=false;updateProgress()}
+
+// Initial status listeners for all form controls.
+bindFormStatusListeners();
+updateProgress();
 
 function collect(){
  const fd=new FormData($("#serviceForm")),o=Object.fromEntries(fd.entries());
  o.reportNo=reportNo();
  const readInputs=el=>Object.fromEntries([...el.querySelectorAll("input,select,textarea")].filter(i=>i.name).map(i=>[i.name,i.value]));
+ o.customerEmails=[...document.querySelectorAll('#customerEmails input[type="email"]')].map(i=>String(i.value||'').trim()).filter(Boolean);
  o.equipment=[...document.querySelectorAll(".equipment")].map(readInputs);
  o.parts=[...document.querySelectorAll(".part-row")].map(readInputs).filter(x=>x.partNo||x.partDesc||x.qty);
  o.signature=hasSig?canvas.toDataURL("image/png"):"";o.generatedAt=new Date().toISOString();return o;
@@ -101,7 +205,10 @@ function renderReview(o,finalized=false){
  <div class="review-grid">
    <div><span>Customer</span><strong>${escapeHtml(o.company||"—")}</strong></div>
    <div><span>Contact Person</span><strong>${escapeHtml(o.contact||"—")}</strong></div>
+   <div><span>Email(s)</span><strong>${escapeHtml((o.customerEmails||[o.email||""]).join(", ")||"—")}</strong></div>
    <div><span>Service Date</span><strong>${escapeHtml(o.serviceDate||"—")}</strong></div>
+   <div><span>Start Time</span><strong>${escapeHtml(o.startTime||"—")}</strong></div>
+   <div><span>End Time</span><strong>${escapeHtml(o.endTime||"—")}</strong></div>
    <div><span>Technician</span><strong>${escapeHtml(o.technician||"—")}</strong></div>
    <div><span>PO Number</span><strong>${escapeHtml(o.po||"—")}</strong></div>
    <div><span>Customer Work Order</span><strong>${escapeHtml(o.workOrder||"—")}</strong></div>
@@ -135,6 +242,7 @@ function renderReview(o,finalized=false){
      const latest=collect();
      latest.finalizedAt=new Date().toISOString();
      localStorage.setItem("atd_last_report",JSON.stringify(latest));
+     updateProgress();
      counter=Math.min(counter+1,999);
      localStorage.setItem("atd_service_counter",String(counter));
      renderReview(latest,true);
@@ -149,6 +257,13 @@ $("#serviceForm").addEventListener("submit",e=>{
  const form=$("#serviceForm");
  if(!form.checkValidity()){form.reportValidity();return}
  if(!hasSig){alert("Customer signature is required.");return}
+ const startTime=document.querySelector('[name="startTime"]').value;
+ const endTime=document.querySelector('[name="endTime"]').value;
+ if(startTime && endTime && endTime < startTime){
+   alert("End Time must be later than Start Time.");
+   document.querySelector('[name="endTime"]').focus();
+   return;
+ }
  const o=collect();
  // This is a review/draft stage. Do not increment the report number or record final acceptance yet.
  localStorage.setItem("atd_pending_report",JSON.stringify(o));
@@ -212,12 +327,14 @@ async function generatePDF(saveFile=true){
 
   let y=29;
   y=section("1. CUSTOMER INFORMATION",y);
-  field(M,y,58,"Company Name",o.company,true);field(M+61,y,58,"Contact Person",o.contact);field(M+122,y,62,"Email",o.email);y+=16;
+  const pdfEmails=(o.customerEmails||[o.email||""]).filter(Boolean).join(", ");
+  field(M,y,58,"Company Name",o.company,true);field(M+61,y,58,"Contact Person",o.contact);field(M+122,y,62,"Email(s)",pdfEmails);y+=16;
   field(M,y,58,"Phone",o.phone);field(M+61,y,88,"Service Address",o.address);field(M+152,y,32,"City",o.city);y+=16;
   field(M,y,58,"Province",o.province);field(M+61,y,58,"Postal Code",o.postal);y+=19;
 
   y=section("2. SERVICE INFORMATION",y);
-  field(M,y,43,"Service Date",o.serviceDate,true);field(M+46,y,48,"Technician",o.technician);field(M+97,y,38,"PO Number",o.po);field(M+138,y,46,"Work Order",o.workOrder);y+=16;
+  field(M,y,38,"Service Date",o.serviceDate,true);field(M+41,y,42,"Technician",o.technician);field(M+86,y,30,"Start Time",o.startTime,true);field(M+119,y,30,"End Time",o.endTime,true);field(M+152,y,32,"PO Number",o.po);y+=16;
+  field(M,y,184,"Customer Work Order",o.workOrder);y+=16;
   field(M,y,184,"Service Type",o.serviceType);y+=19;
 
   y=section("3. EQUIPMENT INFORMATION",y);
@@ -262,9 +379,11 @@ async function deliverReport(o){
    const dataUri=await generatePDF(false);
    if(!dataUri) throw new Error("PDF generation failed");
    const pdfBase64=dataUri.split(",")[1];
-   const payload={googleCredential:window.__ATD_GOOGLE_CREDENTIAL || "",
+   const payload={
+     googleCredential,
      reportNo:o.reportNo,
-     customerEmail:o.email,
+     customerEmails:o.customerEmails||[o.email].filter(Boolean),
+     customerEmail:(o.customerEmails||[o.email]).filter(Boolean).join(","),
      company:o.company,
      customerName:o.customerName,
      pdfBase64,
@@ -299,6 +418,7 @@ const ALLOWED_GOOGLE_EMAIL =
 
 let googleAuthenticated = false;
 let googleUser = null;
+let googleCredential = null;
 
 function loadGoogleIdentityServices(){
   return new Promise((resolve,reject)=>{
@@ -346,7 +466,8 @@ function decodeGoogleJwt(token){
 }
 
 function handleGoogleCredential(response){
-  const user=decodeGoogleJwt(response && response.credential);
+  const credential=String(response && response.credential || "");
+  const user=decodeGoogleJwt(credential);
 
   if(!user){
     showGoogleLoginError("Google sign-in failed. Please try again.");
@@ -374,6 +495,7 @@ function handleGoogleCredential(response){
 
   googleAuthenticated=true;
   googleUser=user;
+  googleCredential=credential;
 
   sessionStorage.setItem("atd_google_authenticated","true");
   sessionStorage.setItem("atd_google_email",email);
@@ -501,23 +623,8 @@ function unlockServiceReport(){
 }
 
 function checkGoogleSession(){
-  const authenticated=sessionStorage.getItem("atd_google_authenticated");
-  const email=sessionStorage.getItem("atd_google_email");
-
-  if(
-    authenticated==="true" &&
-    email &&
-    email.toLowerCase()===ALLOWED_GOOGLE_EMAIL.toLowerCase()
-  ){
-    googleAuthenticated=true;
-    googleUser={
-      email,
-      name:sessionStorage.getItem("atd_google_name")||""
-    };
-    unlockServiceReport();
-    return true;
-  }
-
+  // The delivery credential is intentionally kept in memory only.
+  // A stored session flag alone must never be treated as authenticated.
   return false;
 }
 
@@ -558,6 +665,7 @@ function googleLogout(){
   sessionStorage.removeItem("atd_google_name");
   googleAuthenticated=false;
   googleUser=null;
+  googleCredential=null;
   location.reload();
 }
 
