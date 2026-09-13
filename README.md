@@ -1,37 +1,41 @@
-AutomationTodayCA Service Report — FINAL frontend + backend update
+# AutomationTodayCA Service Report — Final Secure Build
 
-FILES
+## Files
 - index.html
 - app.js
 - style.css
 - Code.gs
-- atd-logo.png
 
-IMPORTANT SECURITY
-- ATD_SECRET and ATD_SECRET1 are read only from Apps Script Script Properties.
-- Their values are NOT in index.html, app.js, style.css, or GitHub.
-- The backend requires both properties to exist before delivery.
-- Google ID-token verification remains server-side.
-- GOOGLE_CLIENT_ID is read from Script Properties when present, with the existing client ID retained as a compatibility fallback.
+## GitHub
+Replace the existing `index.html`, `app.js`, and `style.css`.
+Keep your existing `atd-logo.png` in the repository.
 
-FORM FEATURES
-- Dynamic customer email fields (+ Add Email / remove)
-- Dynamic phone fields (+ Add Phone / remove)
-- Required Start Time and End Time
-- Required fields are highlighted yellow when missing/invalid
-- Section indicators: red = required missing, yellow = optional information missing, green = complete
-- Existing Drive + Gmail delivery flow retained
-- Existing single customerEmail field remains supported for compatibility
+The frontend does NOT contain ATD_SECRET or ATD_SECRET1.
 
-DEPLOYMENT
-1. Replace Code.gs in Apps Script with this Code.gs.
-2. Confirm Script Properties contain:
-   ATD_SECRET
-   ATD_SECRET1
-   GOOGLE_CLIENT_ID (recommended)
-3. Deploy a new Web App version using the same deployment URL if possible.
-4. Upload index.html, app.js, style.css and atd-logo.png to GitHub Pages.
-5. Test Google login first.
-6. Then submit a test report and verify both Drive and Gmail.
+## Apps Script
+Replace Code.gs with the included version.
 
-DO NOT put ATD_SECRET or ATD_SECRET1 into GitHub/frontend code.
+Script Properties MUST contain:
+- ATD_SECRET
+- ATD_SECRET1
+
+Do not put their values in GitHub.
+
+Deploy as Web App:
+- Execute as: Me
+- Who has access: Anyone
+
+After saving Code.gs:
+Deploy -> Manage deployments -> Edit -> New version -> Deploy
+
+## Google authentication
+The frontend sends the current Google ID token as `googleCredential`.
+The backend verifies it server-side.
+
+## Form changes
+- Multiple customer emails with add/remove
+- Multiple phone numbers with add/remove
+- Required Start Time
+- Required End Time
+- Required-field yellow highlighting
+- Section status: red = missing required, yellow = missing optional, green = complete

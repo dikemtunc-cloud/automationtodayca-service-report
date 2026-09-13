@@ -81,14 +81,18 @@ function clearSignature(){ctx.clearRect(0,0,canvas.width,canvas.height);hasSig=f
 function collect(){
  const fd=new FormData($("#serviceForm")),o=Object.fromEntries(fd.entries());
  o.reportNo=reportNo();
- o.customerEmails=[...document.querySelectorAll('#emailList input[name="email"]')].map(i=>i.value.trim()).filter(Boolean);
- o.customerPhones=[...document.querySelectorAll('#phoneList input[name="phone"]')].map(i=>i.value.trim()).filter(Boolean);
+ o.customerEmails=[...document.querySelectorAll('#emailList input[name="email"]')]
+   .map(i=>i.value.trim()).filter(Boolean);
+ o.customerPhones=[...document.querySelectorAll('#phoneList input[name="phone"]')]
+   .map(i=>i.value.trim()).filter(Boolean);
  o.email=o.customerEmails[0]||"";
  o.phone=o.customerPhones[0]||"";
  const readInputs=el=>Object.fromEntries([...el.querySelectorAll("input,select,textarea")].filter(i=>i.name).map(i=>[i.name,i.value]));
  o.equipment=[...document.querySelectorAll(".equipment")].map(readInputs);
  o.parts=[...document.querySelectorAll(".part-row")].map(readInputs).filter(x=>x.partNo||x.partDesc||x.qty);
- o.signature=hasSig?canvas.toDataURL("image/png"):"";o.generatedAt=new Date().toISOString();return o;
+ o.signature=hasSig?canvas.toDataURL("image/png"):"";
+ o.generatedAt=new Date().toISOString();
+ return o;
 }
 function renderReview(o,finalized=false){
  const eqRows=(o.equipment||[]).map(e=>`<tr><td>${escapeHtml(e.equipment||"—")}</td><td>${escapeHtml(e.manufacturer||"—")}</td><td>${escapeHtml(e.model||"—")}</td><td>${escapeHtml(e.serial||"—")}</td></tr>`).join("");
@@ -262,14 +266,18 @@ async function deliverReport(o){
    return false;
  }
  try{
+   if(!googleAuthenticated || !googleCredential){
+     throw new Error("Google authentication session expired. Please sign in again.");
+   }
    if(button){button.disabled=true;button.textContent="SENDING...";}
    const dataUri=await generatePDF(false);
    if(!dataUri) throw new Error("PDF generation failed");
    const pdfBase64=dataUri.split(",")[1];
    const payload={
-     googleCredential,
+     googleCredential:googleCredential||"",
      reportNo:o.reportNo,
-     customerEmails:o.customerEmails||[],customerEmail:o.email,
+     customerEmails:o.customerEmails||[o.email||""],
+     customerEmail:o.email||"",
      company:o.company,
      customerName:o.customerName,
      pdfBase64,
@@ -291,8 +299,108 @@ async function deliverReport(o){
 function downloadData(){generatePDF(true);}
 
 
+
+/* =========================================================
+   DYNAMIC CONTACT FIELDS
+   ========================================================= */
+
+function addContact(type){
+  const list=document.getElementById(type+"List");
+  if(!list)return;
+
+  const row=document.createElement("div");
+  row.className="contact-row";
+
+  const input=document.createElement("input");
+  input.name=type;
+  input.type=(type==="email"?"email":"text");
+  input.placeholder=(type==="email"?"e.g. john@company.com":"e.g. 416-555-1234");
+
+  const remove=document.createElement("button");
+  remove.type="button";
+  remove.className="remove-contact";
+  remove.textContent="×";
+  remove.onclick=function(){removeContact(remove,type+"List");};
+
+  row.appendChild(input);
+  row.appendChild(remove);
+  list.appendChild(row);
+  input.focus();
+  updateSectionStatus();
+}
+
+function removeContact(button,listId){
+  const list=document.getElementById(listId);
+  if(!list)return;
+
+  const rows=list.querySelectorAll(".contact-row");
+
+  if(rows.length===1){
+    const input=rows[0].querySelector("input");
+    if(input)input.value="";
+  }else{
+    button.closest(".contact-row").remove();
+  }
+
+  updateSectionStatus();
+}
+
+
+/* =========================================================
+   SECTION STATUS / REQUIRED FIELD HIGHLIGHTING
+   ========================================================= */
+
+function updateSectionStatus(){
+  document.querySelectorAll("#serviceForm > section.card").forEach(function(section,index){
+
+    const requiredFields=[...section.querySelectorAll("input[required],textarea[required],select[required]")]
+      .filter(el=>!el.disabled && !el.readOnly);
+
+    const invalidRequired=requiredFields.some(function(el){
+      return !String(el.value||"").trim() || !el.checkValidity();
+    });
+
+    requiredFields.forEach(function(el){
+      el.classList.toggle(
+        "required-missing",
+        !String(el.value||"").trim() || !el.checkValidity()
+      );
+    });
+
+    const optionalFields=[...section.querySelectorAll("input:not([type=hidden]):not([required]),textarea,select")]
+      .filter(el=>!el.disabled && !el.readOnly);
+
+    const optionalMissing=optionalFields.some(function(el){
+      return !String(el.value||"").trim();
+    });
+
+    let status="complete";
+    if(invalidRequired) status="incomplete";
+    else if(optionalMissing) status="partial";
+
+    section.dataset.status=status;
+
+    const step=document.querySelector('.step[data-step="'+(index+1)+'"]');
+    if(step){
+      step.classList.remove("status-incomplete","status-partial","status-complete");
+      step.classList.add("status-"+status);
+    }
+  });
+}
+
+document.addEventListener("input",function(e){
+  if(e.target.closest("#serviceForm")) updateSectionStatus();
+});
+document.addEventListener("change",function(e){
+  if(e.target.closest("#serviceForm")) updateSectionStatus();
+});
+setTimeout(updateSectionStatus,100);
+
+
 /* =========================================================
    GOOGLE SIGN-IN
+   ========================================================= */
+
    AutomationTodayCA Service Report
    ========================================================= */
 
@@ -304,7 +412,7 @@ const ALLOWED_GOOGLE_EMAIL =
 
 let googleAuthenticated = false;
 let googleUser = null;
-let googleCredential = null;
+let googleCredential = "";
 
 function loadGoogleIdentityServices(){
   return new Promise((resolve,reject)=>{
@@ -352,8 +460,8 @@ function decodeGoogleJwt(token){
 }
 
 function handleGoogleCredential(response){
-  const credential=String(response && response.credential || "");
-  const user=decodeGoogleJwt(credential);
+  googleCredential=String(response && response.credential || "").trim();
+  const user=decodeGoogleJwt(googleCredential);
 
   if(!user){
     showGoogleLoginError("Google sign-in failed. Please try again.");
@@ -381,7 +489,6 @@ function handleGoogleCredential(response){
 
   googleAuthenticated=true;
   googleUser=user;
-  googleCredential=credential;
 
   sessionStorage.setItem("atd_google_authenticated","true");
   sessionStorage.setItem("atd_google_email",email);
@@ -509,8 +616,26 @@ function unlockServiceReport(){
 }
 
 function checkGoogleSession(){
-  // The delivery credential is intentionally kept in memory only.
-  // A stored session flag alone must never be treated as authenticated.
+  const authenticated=sessionStorage.getItem("atd_google_authenticated");
+  const email=sessionStorage.getItem("atd_google_email");
+
+  if(
+    authenticated==="true" &&
+    email &&
+    email.toLowerCase()===ALLOWED_GOOGLE_EMAIL.toLowerCase()
+  ){
+    // Session-only UI convenience. A fresh Google credential is still
+    // required before delivery; the credential itself is not persisted.
+    googleAuthenticated=true;
+    googleUser={
+      email,
+      name:sessionStorage.getItem("atd_google_name")||""
+    };
+    googleCredential="";
+    unlockServiceReport();
+    return true;
+  }
+
   return false;
 }
 
@@ -551,7 +676,6 @@ function googleLogout(){
   sessionStorage.removeItem("atd_google_name");
   googleAuthenticated=false;
   googleUser=null;
-  googleCredential=null;
   location.reload();
 }
 

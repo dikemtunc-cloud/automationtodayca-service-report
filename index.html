@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AutomationTodayCA | Service Report</title>
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
 <header class="site-header">
@@ -47,27 +47,25 @@
     <label class="yellow-field">Company Name *<input name="company" placeholder="e.g. ABC Manufacturing Inc." required></label>
     <label>Contact Person *<input name="contact" placeholder="e.g. John Smith" required></label>
     <div class="dynamic-contact-field">
-  <label>Email *
-    <div id="emailList" class="dynamic-list">
-      <div class="contact-row">
-        <input type="email" name="email" placeholder="e.g. john@company.com" required>
-        <button type="button" class="remove-contact" onclick="removeContact(this,'emailList')">×</button>
+      <label>Email *</label>
+      <div id="emailList" class="dynamic-list">
+        <div class="contact-row">
+          <input type="email" name="email" placeholder="e.g. john@company.com" required>
+          <button type="button" class="remove-contact" onclick="removeContact(this,'emailList')">×</button>
+        </div>
       </div>
+      <button type="button" class="add-contact" onclick="addContact('email')">＋ Add Email</button>
     </div>
-  </label>
-  <button type="button" class="add-contact" onclick="addContact('email')">＋ Add Email</button>
-</div>
     <div class="dynamic-contact-field">
-  <label>Phone
-    <div id="phoneList" class="dynamic-list">
-      <div class="contact-row">
-        <input name="phone" placeholder="e.g. 416-555-1234">
-        <button type="button" class="remove-contact" onclick="removeContact(this,'phoneList')">×</button>
+      <label>Phone</label>
+      <div id="phoneList" class="dynamic-list">
+        <div class="contact-row">
+          <input name="phone" placeholder="e.g. 416-555-1234">
+          <button type="button" class="remove-contact" onclick="removeContact(this,'phoneList')">×</button>
+        </div>
       </div>
+      <button type="button" class="add-contact" onclick="addContact('phone')">＋ Add Phone</button>
     </div>
-  </label>
-  <button type="button" class="add-contact" onclick="addContact('phone')">＋ Add Phone</button>
-</div>
     <label class="full">Service Address<input name="address" placeholder="e.g. 123 Industrial Road"></label>
     <label>City<input name="city" placeholder="e.g. Toronto"></label>
     <label>Province<select name="province"><option>ON</option><option>AB</option><option>BC</option><option>MB</option><option>NB</option><option>NL</option><option>NS</option><option>NT</option><option>NU</option><option>PE</option><option>QC</option><option>SK</option><option>YT</option></select></label>
@@ -175,51 +173,7 @@
 
 <footer>AUTOMATIONTODAYCA &nbsp; | &nbsp; Toronto, ON &nbsp; | &nbsp; Reliable Solutions for a Smarter Tomorrow</footer>
 </main>
-
-<script>
-(function(){
-  function val(el){ return String(el.value||"").trim(); }
-  function updateStatus(){
-    document.querySelectorAll("#serviceForm > section.card").forEach(function(card,idx){
-      const req=[...card.querySelectorAll("input[required],textarea[required],select[required]")];
-      const all=[...card.querySelectorAll("input:not([type=hidden]),textarea,select")].filter(e=>!e.disabled&&!e.readOnly);
-      const bad=req.some(e=>!val(e)||!e.checkValidity());
-      const optionalMissing=all.some(e=>!e.required&&!val(e));
-      const state=bad?"incomplete":(optionalMissing?"partial":"complete");
-      card.dataset.status=state;
-      const step=document.querySelector('.step[data-step="'+(idx+1)+'"]');
-      if(step){
-        step.classList.remove("status-incomplete","status-partial","status-complete");
-        step.classList.add("status-"+state);
-      }
-    });
-    document.querySelectorAll("#serviceForm input[required],#serviceForm textarea[required],#serviceForm select[required]")
-      .forEach(e=>e.classList.toggle("required-missing",!val(e)||!e.checkValidity()));
-  }
-  window.addContact=function(type){
-    const list=document.getElementById(type+"List");
-    const row=document.createElement("div"); row.className="contact-row";
-    const input=document.createElement("input");
-    input.name=type; input.type=type==="email"?"email":"text";
-    input.placeholder=type==="email"?"e.g. john@company.com":"e.g. 416-555-1234";
-    if(type==="email") input.required=false;
-    const btn=document.createElement("button"); btn.type="button"; btn.className="remove-contact"; btn.textContent="×";
-    btn.onclick=function(){removeContact(btn,type+"List")};
-    row.append(input,btn); list.appendChild(row); input.focus(); updateStatus();
-  };
-  window.removeContact=function(btn,id){
-    const list=document.getElementById(id), rows=list.querySelectorAll(".contact-row");
-    if(rows.length===1){ rows[0].querySelector("input").value=""; }
-    else btn.closest(".contact-row").remove();
-    updateStatus();
-  };
-  document.addEventListener("input",function(e){if(e.target.closest("#serviceForm"))updateStatus()});
-  document.addEventListener("change",function(e){if(e.target.closest("#serviceForm"))updateStatus()});
-  document.addEventListener("DOMContentLoaded",updateStatus);
-})();
-</script>
-
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-<script src="app.js?v=8"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>
