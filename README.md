@@ -1,32 +1,24 @@
-# AutomationTodayCA Service Report
+# AutomationTodayCA Service Report — V34
 
-## GitHub Pages files
-Upload these files to the repository root:
+GitHub Pages files:
 - index.html
 - app.js
 - style.css
 - atd-logo.png
 
-## Google Apps Script
-`Code.gs` is included as the matching backend.
+Backend backup:
+- Code.gs
 
-Deployment:
-- Execute as: **Me**
-- Who has access: **Anyone**
+Google Apps Script deployment:
+- Execute as: Me
+- Who has access: Anyone
+- Existing Web App /exec endpoint is used by app.js.
 
-Keep the existing `/exec` URL:
-`https://script.google.com/macros/s/AKfycbwfczh-MvsK32iZKLIUlN56YyOC-gca5LGmLlIE8s8b-yTuVvwfDocXt74xaZUChyop/exec`
+Security:
+- ATD_SECRET stays only in Apps Script Script Properties.
+- ATD_SECRET1 is NOT used.
+- Google OAuth Client ID is public client configuration and may appear in browser code.
+- Google ID token is verified by the backend.
 
-Script Properties must contain:
-- `ATD_SECRET`
-
-The actual secret is never stored in GitHub or frontend code.
-
-Google authentication:
-- Client ID: 246009211153-kqkpn2d35ebrgu5osa1l12i8tt4rhd21.apps.googleusercontent.com
-- Authorized account: automationtodayca@gmail.com
-
-The backend verifies the Google ID token server-side, saves the PDF to:
-`AutomationTodayCA Service Reports`
-
-and emails the customer plus `automationtodayca@gmail.com`.
+Drive folder: AutomationTodayCA Service Reports
+Email: customer + automationtodayca@gmail.com
