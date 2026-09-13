@@ -21,7 +21,7 @@ After saving the script, use **Deploy → Manage deployments → Edit** and crea
 The frontend is already configured with the existing Apps Script `/exec` endpoint and the matching shared delivery secret.
 
 ## Important
-Do not publish the Apps Script secret or OAuth client secret. The Google OAuth Client ID is safe to be present in browser code; the delivery secret should be rotated if this repository is public.
+Do not publish any OAuth client secret. The Google OAuth Client ID may be present in browser code. The Google OAuth Client ID is safe to be present in browser code; the backend now verifies the Google ID token server-side; no delivery secret is embedded in the frontend.
 
 The backend saves each accepted Customer Copy into the Google Drive folder:
 `AutomationTodayCA Service Reports`
