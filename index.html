@@ -47,19 +47,25 @@
     <label class="yellow-field">Company Name *<input name="company" placeholder="e.g. ABC Manufacturing Inc." required></label>
     <label>Contact Person *<input name="contact" placeholder="e.g. John Smith" required></label>
     <div class="dynamic-contact-field">
-      <div class="dynamic-label">Email *</div>
-      <div id="emailList" class="dynamic-list">
-        <div class="contact-row"><input type="email" name="email" placeholder="e.g. john@company.com" required><button type="button" class="remove-contact" onclick="removeContact(this, 'emailList')">×</button></div>
-      </div>
-      <button type="button" class="add-contact" onclick="addContact('email')">＋ Add Email</button>
+  <div class="dynamic-label">Email *</div>
+  <div id="emailList" class="dynamic-list">
+    <div class="contact-row">
+      <input type="email" name="email" placeholder="e.g. john@company.com" required>
+      <button type="button" class="remove-contact" aria-label="Remove email" onclick="removeContact(this, 'emailList')">×</button>
     </div>
+  </div>
+  <button type="button" class="add-contact" onclick="addContact('email')">＋ Add Email</button>
+</div>
     <div class="dynamic-contact-field">
-      <div class="dynamic-label">Phone *</div>
-      <div id="phoneList" class="dynamic-list">
-        <div class="contact-row"><input name="phone" placeholder="e.g. 416-555-1234" required></div>
-      </div>
-      <button type="button" class="add-contact" onclick="addContact('phone')">＋ Add Phone</button>
+  <div class="dynamic-label">Phone</div>
+  <div id="phoneList" class="dynamic-list">
+    <div class="contact-row">
+      <input name="phone" placeholder="e.g. 416-555-1234">
+      <button type="button" class="remove-contact" aria-label="Remove phone" onclick="removeContact(this, 'phoneList')">×</button>
     </div>
+  </div>
+  <button type="button" class="add-contact" onclick="addContact('phone')">＋ Add Phone</button>
+</div>
     <label class="full">Service Address<input name="address" placeholder="e.g. 123 Industrial Road"></label>
     <label>City<input name="city" placeholder="e.g. Toronto"></label>
     <label>Province<select name="province"><option>ON</option><option>AB</option><option>BC</option><option>MB</option><option>NB</option><option>NL</option><option>NS</option><option>NT</option><option>NU</option><option>PE</option><option>QC</option><option>SK</option><option>YT</option></select></label>
@@ -169,102 +175,136 @@
 </main>
 
 <script>
+/* =========================================================
+   FORM STATUS / DYNAMIC CONTACT FIELDS
+   ========================================================= */
 (function(){
-  function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-
-  window.addContact = function(type){
-    var list=document.getElementById(type+'List');
-    if(!list) return;
-    var row=document.createElement('div');
-    row.className='contact-row';
-    var input=document.createElement('input');
-    input.name=type;
-    input.required=true;
-    input.placeholder=type==='email'?'e.g. john@company.com':'e.g. 416-555-1234';
-    if(type==='email') input.type='email';
-    var btn=document.createElement('button');
-    btn.type='button'; btn.className='remove-contact'; btn.textContent='×';
-    btn.onclick=function(){removeContact(btn,type+'List');};
-    row.appendChild(input); row.appendChild(btn); list.appendChild(row);
-    input.addEventListener('input', updateSectionStatus);
-    updateSectionStatus();
-    input.focus();
-  };
-
-  window.removeContact = function(btn,listId){
-    var list=document.getElementById(listId);
-    if(!list) return;
-    var rows=list.querySelectorAll('.contact-row');
-    if(rows.length<=1){
-      var input=rows[0]&&rows[0].querySelector('input');
-      if(input){input.value=''; input.focus();}
-      updateSectionStatus(); return;
-    }
-    btn.parentElement.remove();
-    updateSectionStatus();
-  };
-
-  function requiredFields(section){
-    return Array.from(section.querySelectorAll('input[required], textarea[required], select[required]'));
-  }
-  function allFields(section){
-    return Array.from(section.querySelectorAll('input:not([type="hidden"]), textarea, select'));
-  }
-  function isFilled(el){
-    if(el.type==='checkbox' || el.type==='radio') return el.checked;
-    return String(el.value||'').trim()!=='';
-  }
-  function valid(el){
-    return !el.checkValidity || el.checkValidity();
+  function fieldFilled(el){
+    return String(el && el.value || '').trim() !== '';
   }
 
-  function setFieldState(el, missing){
-    el.classList.toggle('required-missing', !!missing);
+  function requiredFields(card){
+    return Array.from(card.querySelectorAll('input[required], textarea[required], select[required]'));
+  }
+
+  function visibleFields(card){
+    return Array.from(card.querySelectorAll('input:not([type="hidden"]), textarea, select'))
+      .filter(function(el){ return !el.disabled && !el.readOnly; });
+  }
+
+  function refreshFieldHighlights(){
+    document.querySelectorAll('#serviceForm input[required], #serviceForm textarea[required], #serviceForm select[required]')
+      .forEach(function(el){
+        el.classList.toggle('required-missing', !fieldFilled(el) || !el.checkValidity());
+      });
   }
 
   window.updateSectionStatus=function(){
-    var cards=Array.from(document.querySelectorAll('form#serviceForm > section.card'));
-    cards.forEach(function(card,idx){
-      var req=requiredFields(card);
-      var fields=allFields(card);
-      req.forEach(function(el){setFieldState(el,!isFilled(el));});
-      var missingReq=req.some(function(el){return !isFilled(el);});
-      var missingOptional=fields.some(function(el){
-        if(el.hasAttribute('required')) return false;
-        if(el.readOnly || el.disabled) return false;
-        return !isFilled(el);
+    const cards=Array.from(document.querySelectorAll('#serviceForm > section.card'));
+    cards.forEach(function(card,index){
+      const req=requiredFields(card);
+      const all=visibleFields(card);
+      const missingRequired=req.some(function(el){
+        return !fieldFilled(el) || !el.checkValidity();
       });
-      var status=missingReq?'incomplete':(missingOptional?'partial':'complete');
-      card.dataset.status=status;
-      var step=document.querySelector('.step[data-step="'+(idx+1)+'"]');
+      const missingOptional=all.some(function(el){
+        return !el.required && !fieldFilled(el);
+      });
+
+      let state=missingRequired ? 'incomplete' : (missingOptional ? 'partial' : 'complete');
+      card.dataset.status=state;
+
+      const step=document.querySelector('.step[data-step="'+(index+1)+'"]');
       if(step){
         step.classList.remove('status-incomplete','status-partial','status-complete');
-        step.classList.add('status-'+status);
+        step.classList.add('status-'+state);
       }
     });
 
-    // Section 6 is green only when all required fields in sections 1–5 are complete.
-    var allReqOK=cards.every(function(card){return !requiredFields(card).some(function(el){return !isFilled(el);});});
-    var step6=document.querySelector('.step[data-step="6"]');
+    // Step 6 represents overall completion.
+    const allRequiredOK=cards.every(function(card){
+      return !requiredFields(card).some(function(el){
+        return !fieldFilled(el) || !el.checkValidity();
+      });
+    });
+    const step6=document.querySelector('.step[data-step="6"]');
     if(step6){
       step6.classList.remove('status-incomplete','status-partial','status-complete');
-      step6.classList.add(allReqOK?'status-complete':'status-incomplete');
+      step6.classList.add(allRequiredOK ? 'status-complete' : 'status-incomplete');
     }
+
+    refreshFieldHighlights();
+  };
+
+  window.addContact=function(type){
+    const list=document.getElementById(type+'List');
+    if(!list) return;
+
+    const row=document.createElement('div');
+    row.className='contact-row';
+
+    const input=document.createElement('input');
+    input.name=type;
+    input.required=(type==='email');
+    input.placeholder=(type==='email') ? 'e.g. john@company.com' : 'e.g. 416-555-1234';
+    if(type==='email') input.type='email';
+
+    const remove=document.createElement('button');
+    remove.type='button';
+    remove.className='remove-contact';
+    remove.setAttribute('aria-label','Remove '+type);
+    remove.textContent='×';
+    remove.onclick=function(){ removeContact(remove,type+'List'); };
+
+    row.appendChild(input);
+    row.appendChild(remove);
+    list.appendChild(row);
+
+    input.addEventListener('input',window.updateSectionStatus);
+    input.addEventListener('change',window.updateSectionStatus);
+    input.focus();
+    window.updateSectionStatus();
+  };
+
+  window.removeContact=function(button,listId){
+    const list=document.getElementById(listId);
+    if(!list) return;
+
+    const rows=list.querySelectorAll('.contact-row');
+    if(rows.length<=1){
+      const input=rows[0] && rows[0].querySelector('input');
+      if(input){
+        input.value='';
+        input.focus();
+      }
+    }else{
+      button.closest('.contact-row').remove();
+    }
+    window.updateSectionStatus();
   };
 
   function bind(){
-    document.querySelectorAll('#serviceForm input,#serviceForm textarea,#serviceForm select').forEach(function(el){
-      el.addEventListener('input',updateSectionStatus);
-      el.addEventListener('change',updateSectionStatus);
-      el.addEventListener('blur',updateSectionStatus);
-    });
-    // service type / result buttons change hidden values; refresh status after clicks
+    document.querySelectorAll('#serviceForm input, #serviceForm textarea, #serviceForm select')
+      .forEach(function(el){
+        el.addEventListener('input',window.updateSectionStatus);
+        el.addEventListener('change',window.updateSectionStatus);
+        el.addEventListener('blur',window.updateSectionStatus);
+      });
+
     document.querySelectorAll('.type,.status').forEach(function(btn){
-      btn.addEventListener('click',function(){setTimeout(updateSectionStatus,0);});
+      btn.addEventListener('click',function(){
+        setTimeout(window.updateSectionStatus,0);
+      });
     });
-    updateSectionStatus();
+
+    window.updateSectionStatus();
   }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bind); else bind();
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',bind);
+  }else{
+    bind();
+  }
 })();
 </script>
 
