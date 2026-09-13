@@ -18,7 +18,8 @@ const $=s=>document.querySelector(s);
 
 // Google Apps Script Web App endpoint. Paste the deployed /exec URL here after deployment.
 const DELIVERY_CONFIG={
-  webAppUrl:"https://script.google.com/macros/s/AKfycbwfczh-MvsK32iZKLIUlN56YyOC-gca5LGmLlIE8s8b-yTuVvwfDocXt74xaZUChyop/exec"
+  webAppUrl:"https://script.google.com/macros/s/AKfycbyHSbleHz_s9EQR2ygDsty05QkRBsSK3aIocfO8PiiFykhYILlFsXDkRWyGPE5TS4Iw/exec",
+  token:"patetesliborek340528"
 };
 let counter=Number(localStorage.getItem("atd_service_counter")||"1");
 const reportNo=()=>`SR_ATD_22AD0005${String(counter).padStart(3,"0")}`;
@@ -263,7 +264,7 @@ async function deliverReport(o){
    if(!dataUri) throw new Error("PDF generation failed");
    const pdfBase64=dataUri.split(",")[1];
    const payload={
-     googleCredential,
+     token:DELIVERY_CONFIG.token,
      reportNo:o.reportNo,
      customerEmail:o.email,
      company:o.company,
@@ -300,7 +301,6 @@ const ALLOWED_GOOGLE_EMAIL =
 
 let googleAuthenticated = false;
 let googleUser = null;
-let googleCredential = null;
 
 function loadGoogleIdentityServices(){
   return new Promise((resolve,reject)=>{
@@ -348,8 +348,7 @@ function decodeGoogleJwt(token){
 }
 
 function handleGoogleCredential(response){
-  const credential=String(response && response.credential || "");
-  const user=decodeGoogleJwt(credential);
+  const user=decodeGoogleJwt(response && response.credential);
 
   if(!user){
     showGoogleLoginError("Google sign-in failed. Please try again.");
@@ -377,7 +376,6 @@ function handleGoogleCredential(response){
 
   googleAuthenticated=true;
   googleUser=user;
-  googleCredential=credential;
 
   sessionStorage.setItem("atd_google_authenticated","true");
   sessionStorage.setItem("atd_google_email",email);
@@ -505,8 +503,23 @@ function unlockServiceReport(){
 }
 
 function checkGoogleSession(){
-  // The delivery credential is intentionally kept in memory only.
-  // A stored session flag alone must never be treated as authenticated.
+  const authenticated=sessionStorage.getItem("atd_google_authenticated");
+  const email=sessionStorage.getItem("atd_google_email");
+
+  if(
+    authenticated==="true" &&
+    email &&
+    email.toLowerCase()===ALLOWED_GOOGLE_EMAIL.toLowerCase()
+  ){
+    googleAuthenticated=true;
+    googleUser={
+      email,
+      name:sessionStorage.getItem("atd_google_name")||""
+    };
+    unlockServiceReport();
+    return true;
+  }
+
   return false;
 }
 
@@ -547,7 +560,6 @@ function googleLogout(){
   sessionStorage.removeItem("atd_google_name");
   googleAuthenticated=false;
   googleUser=null;
-  googleCredential=null;
   location.reload();
 }
 
