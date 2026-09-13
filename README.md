@@ -1,24 +1,29 @@
-# AutomationTodayCA Service Report — V34
+# AutomationTodayCA Service Report — Google Auth + Delivery Backend
 
-GitHub Pages files:
+This package restores the working Google Drive + Gmail delivery configuration while keeping the Google Sign-In lock.
+
+## GitHub Pages
+Replace the repository files with:
 - index.html
 - app.js
 - style.css
 - atd-logo.png
 
-Backend backup:
-- Code.gs
+## Google Apps Script
+Replace the Apps Script `Code.gs` with the included `Code.gs`.
 
-Google Apps Script deployment:
-- Execute as: Me
-- Who has access: Anyone
-- Existing Web App /exec endpoint is used by app.js.
+Deployment settings:
+- Execute as: **Me**
+- Who has access: **Anyone**
 
-Security:
-- ATD_SECRET stays only in Apps Script Script Properties.
-- ATD_SECRET1 is NOT used.
-- Google OAuth Client ID is public client configuration and may appear in browser code.
-- Google ID token is verified by the backend.
+After saving the script, use **Deploy → Manage deployments → Edit** and create a new version of the existing Web App deployment. Keep the same `/exec` URL if possible.
 
-Drive folder: AutomationTodayCA Service Reports
-Email: customer + automationtodayca@gmail.com
+The frontend is already configured with the existing Apps Script `/exec` endpoint and the matching shared delivery secret.
+
+## Important
+Do not publish the Apps Script secret or OAuth client secret. The Google OAuth Client ID is safe to be present in browser code; the delivery secret should be rotated if this repository is public.
+
+The backend saves each accepted Customer Copy into the Google Drive folder:
+`AutomationTodayCA Service Reports`
+
+and emails the customer plus `automationtodayca@gmail.com`.
