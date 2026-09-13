@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AutomationTodayCA | Service Report</title>
-<link rel="stylesheet" href="style.css?v=9">
+<link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 <header class="site-header">
@@ -27,17 +27,17 @@
   </div>
 
   <div class="progress">
-    <div class="step active"><b>1</b><span>Customer</span></div>
+    <div class="step active" data-step="1"><b>1</b><span>Customer</span></div>
     <div class="line"></div>
-    <div class="step"><b>2</b><span>Service Info</span></div>
+    <div class="step" data-step="2"><b>2</b><span>Service Info</span></div>
     <div class="line"></div>
-    <div class="step"><b>3</b><span>Equipment</span></div>
+    <div class="step" data-step="3"><b>3</b><span>Equipment</span></div>
     <div class="line"></div>
-    <div class="step"><b>4</b><span>Work &amp; Materials</span></div>
+    <div class="step" data-step="4"><b>4</b><span>Work &amp; Materials</span></div>
     <div class="line"></div>
-    <div class="step"><b>5</b><span>Review &amp; Sign</span></div>
+    <div class="step" data-step="5"><b>5</b><span>Review &amp; Sign</span></div>
     <div class="line"></div>
-    <div class="step"><b>6</b><span>Complete</span></div>
+    <div class="step" data-step="6"><b>6</b><span>Complete</span></div>
   </div>
 
 <form id="serviceForm">
@@ -46,19 +46,19 @@
   <div class="grid">
     <label class="yellow-field">Company Name *<input name="company" placeholder="e.g. ABC Manufacturing Inc." required></label>
     <label>Contact Person *<input name="contact" placeholder="e.g. John Smith" required></label>
-    <div class="email-field full">
-      <div class="email-field-head"><span>Email *</span><button type="button" class="add-email" onclick="addCustomerEmail()">＋ Add Email</button></div>
-      <div id="customerEmails">
-        <div class="email-row"><input type="email" name="email" placeholder="e.g. john@company.com" required><button type="button" class="remove-email" onclick="removeCustomerEmail(this)" disabled>×</button></div>
+    <div class="dynamic-contact-field">
+      <div class="dynamic-label">Email *</div>
+      <div id="emailList" class="dynamic-list">
+        <div class="contact-row"><input type="email" name="email" placeholder="e.g. john@company.com" required><button type="button" class="remove-contact" onclick="removeContact(this, 'emailList')">×</button></div>
       </div>
-      <small class="field-hint">Primary email is required. You can add additional customer email addresses.</small>
+      <button type="button" class="add-contact" onclick="addContact('email')">＋ Add Email</button>
     </div>
-    <div class="phone-field">
-      <div class="phone-field-head"><span>Phone</span><button type="button" class="add-phone" onclick="addCustomerPhone()">＋ Add Phone</button></div>
-      <div id="customerPhones">
-        <div class="phone-row"><input type="tel" name="phone" placeholder="e.g. 416-555-1234"><button type="button" class="remove-phone" onclick="removeCustomerPhone(this)" disabled>×</button></div>
+    <div class="dynamic-contact-field">
+      <div class="dynamic-label">Phone *</div>
+      <div id="phoneList" class="dynamic-list">
+        <div class="contact-row"><input name="phone" placeholder="e.g. 416-555-1234" required></div>
       </div>
-      <small class="field-hint">You can add additional customer phone numbers.</small>
+      <button type="button" class="add-contact" onclick="addContact('phone')">＋ Add Phone</button>
     </div>
     <label class="full">Service Address<input name="address" placeholder="e.g. 123 Industrial Road"></label>
     <label>City<input name="city" placeholder="e.g. Toronto"></label>
@@ -73,10 +73,10 @@
     <label class="locked">Service Report No.<input id="reportInput" name="reportNo" readonly></label>
     <label class="yellow-field">Service Date *<input type="date" name="serviceDate" required></label>
     <label>Technician *<input name="technician" placeholder="e.g. Your Name" required></label>
-    <label>Start Time *<input type="time" name="startTime" required></label>
-    <label>End Time *<input type="time" name="endTime" required></label>
     <label>PO Number<input name="po" placeholder="e.g. PO-45872"></label>
     <label>Customer Work Order #<input name="workOrder" placeholder="e.g. WO-12345"></label>
+    <label>Start Time *<input type="time" name="startTime" required></label>
+    <label>End Time *<input type="time" name="endTime" required></label>
   </div>
   <div class="service-types">
     <div class="mini-label">SERVICE TYPE *</div>
@@ -167,7 +167,108 @@
 
 <footer>AUTOMATIONTODAYCA &nbsp; | &nbsp; Toronto, ON &nbsp; | &nbsp; Reliable Solutions for a Smarter Tomorrow</footer>
 </main>
+
+<script>
+(function(){
+  function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+  window.addContact = function(type){
+    var list=document.getElementById(type+'List');
+    if(!list) return;
+    var row=document.createElement('div');
+    row.className='contact-row';
+    var input=document.createElement('input');
+    input.name=type;
+    input.required=true;
+    input.placeholder=type==='email'?'e.g. john@company.com':'e.g. 416-555-1234';
+    if(type==='email') input.type='email';
+    var btn=document.createElement('button');
+    btn.type='button'; btn.className='remove-contact'; btn.textContent='×';
+    btn.onclick=function(){removeContact(btn,type+'List');};
+    row.appendChild(input); row.appendChild(btn); list.appendChild(row);
+    input.addEventListener('input', updateSectionStatus);
+    updateSectionStatus();
+    input.focus();
+  };
+
+  window.removeContact = function(btn,listId){
+    var list=document.getElementById(listId);
+    if(!list) return;
+    var rows=list.querySelectorAll('.contact-row');
+    if(rows.length<=1){
+      var input=rows[0]&&rows[0].querySelector('input');
+      if(input){input.value=''; input.focus();}
+      updateSectionStatus(); return;
+    }
+    btn.parentElement.remove();
+    updateSectionStatus();
+  };
+
+  function requiredFields(section){
+    return Array.from(section.querySelectorAll('input[required], textarea[required], select[required]'));
+  }
+  function allFields(section){
+    return Array.from(section.querySelectorAll('input:not([type="hidden"]), textarea, select'));
+  }
+  function isFilled(el){
+    if(el.type==='checkbox' || el.type==='radio') return el.checked;
+    return String(el.value||'').trim()!=='';
+  }
+  function valid(el){
+    return !el.checkValidity || el.checkValidity();
+  }
+
+  function setFieldState(el, missing){
+    el.classList.toggle('required-missing', !!missing);
+  }
+
+  window.updateSectionStatus=function(){
+    var cards=Array.from(document.querySelectorAll('form#serviceForm > section.card'));
+    cards.forEach(function(card,idx){
+      var req=requiredFields(card);
+      var fields=allFields(card);
+      req.forEach(function(el){setFieldState(el,!isFilled(el));});
+      var missingReq=req.some(function(el){return !isFilled(el);});
+      var missingOptional=fields.some(function(el){
+        if(el.hasAttribute('required')) return false;
+        if(el.readOnly || el.disabled) return false;
+        return !isFilled(el);
+      });
+      var status=missingReq?'incomplete':(missingOptional?'partial':'complete');
+      card.dataset.status=status;
+      var step=document.querySelector('.step[data-step="'+(idx+1)+'"]');
+      if(step){
+        step.classList.remove('status-incomplete','status-partial','status-complete');
+        step.classList.add('status-'+status);
+      }
+    });
+
+    // Section 6 is green only when all required fields in sections 1–5 are complete.
+    var allReqOK=cards.every(function(card){return !requiredFields(card).some(function(el){return !isFilled(el);});});
+    var step6=document.querySelector('.step[data-step="6"]');
+    if(step6){
+      step6.classList.remove('status-incomplete','status-partial','status-complete');
+      step6.classList.add(allReqOK?'status-complete':'status-incomplete');
+    }
+  };
+
+  function bind(){
+    document.querySelectorAll('#serviceForm input,#serviceForm textarea,#serviceForm select').forEach(function(el){
+      el.addEventListener('input',updateSectionStatus);
+      el.addEventListener('change',updateSectionStatus);
+      el.addEventListener('blur',updateSectionStatus);
+    });
+    // service type / result buttons change hidden values; refresh status after clicks
+    document.querySelectorAll('.type,.status').forEach(function(btn){
+      btn.addEventListener('click',function(){setTimeout(updateSectionStatus,0);});
+    });
+    updateSectionStatus();
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bind); else bind();
+})();
+</script>
+
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-<script src="app.js?v=10"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>

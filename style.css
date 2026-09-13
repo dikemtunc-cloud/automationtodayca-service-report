@@ -37,43 +37,16 @@
 
 .review-actions .primary-btn{background:#173c78;color:#fff;border-color:#173c78}.review-actions .secondary-btn{background:#fff;color:#173c78}.review-acceptance.pending{background:#fff9d6;border-left:4px solid #e5c900}.review-acceptance.confirmed{background:#eef9f0;border-left:4px solid #4da85f}.review-actions{flex-wrap:wrap}
 
-/* Dynamic form-completion indicators */
-.progress .step.state-red b{background:#d92d36;color:#fff}
-.progress .step.state-yellow b{background:#f2cf00;color:#172033}
-.progress .step.state-green b{background:#18a957;color:#fff}
-.progress .step.state-red{color:#b42318}
-.progress .step.state-yellow{color:#8a6d00}
-.progress .step.state-green{color:#167a3e}
-.progress .step.active.state-red b{background:#d92d36;color:#fff}
-.progress .step.active.state-yellow b{background:#f2cf00;color:#172033}
-.progress .step.active.state-green b{background:#18a957;color:#fff}
-.email-field{display:flex;flex-direction:column;gap:5px}
-.email-field-head{display:flex;align-items:center;justify-content:space-between;font-size:10px;font-weight:800;color:#3c4858}
-.add-email{border:1px solid #1453bd;background:#fff;color:#1453bd;border-radius:4px;padding:4px 8px;font-size:10px;font-weight:800;cursor:pointer}
-.email-row{display:grid;grid-template-columns:1fr 32px;gap:6px;margin-bottom:6px}
-.remove-email{border:1px solid #ccd5df;background:#fff;border-radius:4px;color:#b42318;font-size:17px;cursor:pointer}
-.remove-email:disabled{opacity:.35;cursor:not-allowed}
-.field-hint{font-size:9px;color:#7a8796;font-weight:400}
-@media(max-width:600px){.email-field{grid-column:auto}.email-row{grid-template-columns:1fr 36px}}
-
-/* Required-field highlighting */
-input.required-missing,
-select.required-missing,
-textarea.required-missing{
-  background:#fff3a3 !important;
-  border:2px solid #e5c900 !important;
-}
-.required-missing-label{
-  color:#7a5d00 !important;
-}
-.required-missing-block canvas{
-  background:#fff3a3;
-  border:2px dashed #e5c900;
-}
-.phone-field{display:flex;flex-direction:column;gap:5px}
-.phone-field-head{display:flex;align-items:center;justify-content:space-between;font-size:10px;font-weight:800;color:#3c4858}
-.add-phone{border:1px solid #1453bd;background:#fff;color:#1453bd;border-radius:4px;padding:4px 8px;font-size:10px;font-weight:800;cursor:pointer}
-.phone-row{display:grid;grid-template-columns:1fr 32px;gap:6px;margin-bottom:6px}
-.remove-phone{border:1px solid #ccd5df;background:#fff;border-radius:4px;color:#b42318;font-size:17px;cursor:pointer}
-.remove-phone:disabled{opacity:.35;cursor:not-allowed}
-@media(max-width:600px){.phone-field{grid-column:auto}.phone-row{grid-template-columns:1fr 36px}}
+/* V11 status/contact additions */
+.progress .step.status-incomplete b { background:#d93025 !important; color:#fff !important; }
+.progress .step.status-partial b { background:#f4b400 !important; color:#fff !important; }
+.progress .step.status-complete b { background:#188038 !important; color:#fff !important; }
+.required-missing { background:#fff3cd !important; border-color:#f4b400 !important; box-shadow:0 0 0 2px rgba(244,180,0,.18) !important; }
+.dynamic-contact-field { display:block; }
+.dynamic-label { font-weight:600; margin-bottom:6px; }
+.dynamic-list { display:flex; flex-direction:column; gap:7px; }
+.contact-row { display:flex; gap:7px; align-items:center; }
+.contact-row input { flex:1; min-width:0; }
+.remove-contact { width:34px; height:34px; border:1px solid #d0d7de; border-radius:7px; background:#fff; cursor:pointer; font-size:20px; line-height:1; }
+.remove-contact:hover { background:#f6f8fa; }
+.add-contact { margin-top:7px; border:0; background:transparent; padding:3px 0; cursor:pointer; font-weight:600; }
