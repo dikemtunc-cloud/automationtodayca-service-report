@@ -18,7 +18,7 @@ const $=s=>document.querySelector(s);
 
 // Google Apps Script Web App endpoint. Paste the deployed /exec URL here after deployment.
 const DELIVERY_CONFIG={
-  webAppUrl:"https://script.google.com/macros/s/AKfycbyHSbleHz_s9EQR2ygDsty05QkRBsSK3aIocfO8PiiFykhYILlFsXDkRWyGPE5TS4Iw/exec",
+  webAppUrl:"https://script.google.com/macros/s/AKfycbwfczh-MvsK32iZKLIUN56YyOC-gca5LGmLIIE8s8b-yTuVvwfDocXt74xaZUChyop/exec",
   token:"patetesliborek340528"
 };
 let counter=Number(localStorage.getItem("atd_service_counter")||"1");
