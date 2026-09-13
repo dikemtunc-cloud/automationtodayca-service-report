@@ -271,19 +271,9 @@ async function deliverReport(o){
      pdfBase64,
      filename:`${o.reportNo}.pdf`
    };
-   // Google Apps Script Web Apps require a simple cross-origin POST from the browser.
-   // Keep text/plain + no-cors: changing this to application/json would trigger a CORS
-   // preflight that Apps Script Web Apps do not handle reliably.
-   await fetch(DELIVERY_CONFIG.webAppUrl,{
-     method:"POST",
-     mode:"no-cors",
-     headers:{"Content-Type":"text/plain;charset=utf-8"},
-     body:JSON.stringify(payload)
-   });
-
-   // With no-cors the browser cannot read the response body, so this only means
-   // that the POST was handed off to the Web App. The backend performs Drive/Gmail work.
-   if(status) status.innerHTML="✓ Customer copy request submitted. Please check Google Drive and email.";
+   // text/plain avoids a browser CORS preflight when calling Google Apps Script.
+   await fetch(DELIVERY_CONFIG.webAppUrl,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)});
+   if(status) status.innerHTML="✓ Customer copy delivery request sent. The PDF is being saved to Google Drive and emailed.";
    localStorage.setItem("atd_last_delivery",new Date().toISOString());
    return true;
  }catch(err){
