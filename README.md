@@ -1,41 +1,29 @@
-# AutomationTodayCA Service Report — Final Secure Build
+# AutomationTodayCA Service Report — Google Auth + Delivery Backend
 
-## Files
+This package restores the working Google Drive + Gmail delivery configuration while keeping the Google Sign-In lock.
+
+## GitHub Pages
+Replace the repository files with:
 - index.html
 - app.js
 - style.css
-- Code.gs
+- atd-logo.png
 
-## GitHub
-Replace the existing `index.html`, `app.js`, and `style.css`.
-Keep your existing `atd-logo.png` in the repository.
+## Google Apps Script
+Replace the Apps Script `Code.gs` with the included `Code.gs`.
 
-The frontend does NOT contain ATD_SECRET or ATD_SECRET1.
+Deployment settings:
+- Execute as: **Me**
+- Who has access: **Anyone**
 
-## Apps Script
-Replace Code.gs with the included version.
+After saving the script, use **Deploy → Manage deployments → Edit** and create a new version of the existing Web App deployment. Keep the same `/exec` URL if possible.
 
-Script Properties MUST contain:
-- ATD_SECRET
-- ATD_SECRET1
+The frontend is already configured with the existing Apps Script `/exec` endpoint and the matching shared delivery secret.
 
-Do not put their values in GitHub.
+## Important
+Do not publish any OAuth client secret. The Google OAuth Client ID may be present in browser code. The Google OAuth Client ID is safe to be present in browser code; the backend now verifies the Google ID token server-side; no delivery secret is embedded in the frontend.
 
-Deploy as Web App:
-- Execute as: Me
-- Who has access: Anyone
+The backend saves each accepted Customer Copy into the Google Drive folder:
+`AutomationTodayCA Service Reports`
 
-After saving Code.gs:
-Deploy -> Manage deployments -> Edit -> New version -> Deploy
-
-## Google authentication
-The frontend sends the current Google ID token as `googleCredential`.
-The backend verifies it server-side.
-
-## Form changes
-- Multiple customer emails with add/remove
-- Multiple phone numbers with add/remove
-- Required Start Time
-- Required End Time
-- Required-field yellow highlighting
-- Section status: red = missing required, yellow = missing optional, green = complete
+and emails the customer plus `automationtodayca@gmail.com`.

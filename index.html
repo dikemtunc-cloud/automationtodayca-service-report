@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AutomationTodayCA | Service Report</title>
-<link rel="stylesheet" href="style.css?v=10">
+<link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 <header class="site-header">
@@ -46,26 +46,8 @@
   <div class="grid">
     <label class="yellow-field">Company Name *<input name="company" placeholder="e.g. ABC Manufacturing Inc." required></label>
     <label>Contact Person *<input name="contact" placeholder="e.g. John Smith" required></label>
-    <div class="dynamic-contact-field">
-      <label>Email *</label>
-      <div id="emailList" class="dynamic-list">
-        <div class="contact-row">
-          <input type="email" name="email" placeholder="e.g. john@company.com" required>
-          <button type="button" class="remove-contact" onclick="removeContact(this,'emailList')">×</button>
-        </div>
-      </div>
-      <button type="button" class="add-contact" onclick="addContact('email')">＋ Add Email</button>
-    </div>
-    <div class="dynamic-contact-field">
-      <label>Phone</label>
-      <div id="phoneList" class="dynamic-list">
-        <div class="contact-row">
-          <input name="phone" placeholder="e.g. 416-555-1234">
-          <button type="button" class="remove-contact" onclick="removeContact(this,'phoneList')">×</button>
-        </div>
-      </div>
-      <button type="button" class="add-contact" onclick="addContact('phone')">＋ Add Phone</button>
-    </div>
+    <label>Email *<input type="email" name="email" placeholder="e.g. john@company.com" required></label>
+    <label>Phone<input name="phone" placeholder="e.g. 416-555-1234"></label>
     <label class="full">Service Address<input name="address" placeholder="e.g. 123 Industrial Road"></label>
     <label>City<input name="city" placeholder="e.g. Toronto"></label>
     <label>Province<select name="province"><option>ON</option><option>AB</option><option>BC</option><option>MB</option><option>NB</option><option>NL</option><option>NS</option><option>NT</option><option>NU</option><option>PE</option><option>QC</option><option>SK</option><option>YT</option></select></label>
@@ -81,8 +63,6 @@
     <label>Technician *<input name="technician" placeholder="e.g. Your Name" required></label>
     <label>PO Number<input name="po" placeholder="e.g. PO-45872"></label>
     <label>Customer Work Order #<input name="workOrder" placeholder="e.g. WO-12345"></label>
-    <label>Start Time *<input type="time" name="startTime" required></label>
-    <label>End Time *<input type="time" name="endTime" required></label>
   </div>
   <div class="service-types">
     <div class="mini-label">SERVICE TYPE *</div>
@@ -174,6 +154,6 @@
 <footer>AUTOMATIONTODAYCA &nbsp; | &nbsp; Toronto, ON &nbsp; | &nbsp; Reliable Solutions for a Smarter Tomorrow</footer>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-<script src="app.js?v=10"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>
